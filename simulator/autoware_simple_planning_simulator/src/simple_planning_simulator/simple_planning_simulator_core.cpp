@@ -276,6 +276,13 @@ void SimplePlanningSimulator::initialize_vehicle_model(const std::string & vehic
       vel_lim, steer_lim, vel_rate_lim, steer_rate_lim, wheelbase, timer_sampling_time_ms_ / 1000.0,
       acc_time_delay, acc_time_constant, steer_time_delay, steer_time_constant, steer_dead_band,
       steer_bias, debug_acc_scaling_factor, debug_steer_scaling_factor);
+  //---Added for the 4WS vehicle model---
+  } else if (vehicle_model_type_str == "FOUR_WS_DELAY_STEER_ACC") {
+    vehicle_model_type_ = VehicleModelType::FOUR_WS_DELAY_STEER_ACC;
+    vehicle_model_ptr_ = std::make_shared<SimModel4wsDelaySteerAcc>(
+      vel_lim, steer_lim, vel_rate_lim, steer_rate_lim, wheelbase, timer_sampling_time_ms_ / 1000.0,
+      acc_time_delay, acc_time_constant, steer_time_delay, steer_time_constant, steer_dead_band,
+      steer_bias, debug_acc_scaling_factor, debug_steer_scaling_factor);    
   } else if (vehicle_model_type_str == "DELAY_STEER_ACC_GEARED") {
     vehicle_model_type_ = VehicleModelType::DELAY_STEER_ACC_GEARED;
     vehicle_model_ptr_ = std::make_shared<SimModelDelaySteerAccGeared>(
