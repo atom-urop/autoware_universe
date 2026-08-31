@@ -155,6 +155,13 @@ SimplePlanningSimulator::SimplePlanningSimulator(const rclcpp::NodeOptions & opt
     sub_ackermann_cmd_ = create_subscription<Control>(
       "input/ackermann_control_command", QoS{1},
       [this](const Control::ConstSharedPtr msg) { current_input_command_ = *msg; });
+    //Adding the subscription in the cpp file for the rear steer from the Lateral Command
+    sub_rear_steer_cmd_ = create_subscription<autoware_control_msgs::msg::Lateral>(
+      "input/rear_steering_command", QoS{1},
+      [this](const autoware_control_msgs::msg::Lateral::ConstSharedPtr msg) {
+        current_rear_steer_cmd_ = msg->steering_tire_angle;
+        last_rear_steer_cmd_time_ = this->now();
+      });
   }
 
   pub_control_mode_report_ =
@@ -647,6 +654,12 @@ void SimplePlanningSimulator::set_input(const Control & cmd, const double acc_by
     vehicle_model_type_ == VehicleModelType::IDEAL_STEER_ACC ||
     vehicle_model_type_ == VehicleModelType::DELAY_STEER_ACC) {  // NOLINT
     input << combined_acc, steer;
+
+  } else if (vehicle_model_type_ == VehicleModelType::FOUR_WS_DELAY_STEER_ACC) {
+    const double age = (this->now() - last_rear_steer_cmd_time_).seconds();
+    const double rear_steer = (age > 0.5) ? 0.0 : current_rear_steer_cmd_;
+    input << combined_acc, steer, rear_steer;
+
   } else if (  // NOLINT
     vehicle_model_type_ == VehicleModelType::IDEAL_STEER_ACC_GEARED ||
     vehicle_model_type_ == VehicleModelType::DELAY_STEER_ACC_GEARED ||
@@ -763,6 +776,8 @@ void SimplePlanningSimulator::set_initial_state(const Pose & pose, const Twist &
     vehicle_model_type_ == VehicleModelType::ACTUATION_CMD_MECHANICAL ||
     vehicle_model_type_ == VehicleModelType::ACTUATION_CMD_STEER_MAP) {
     state << x, y, yaw, vx, steer, accx;
+  } else if (vehicle_model_type_ == VehicleModelType::FOUR_WS_DELAY_STEER_ACC) {//Added for 4WS vehicle model
+    state << x, y, yaw, vx, steer, 0.0, accx;
   }
   vehicle_model_ptr_->setState(state);
 

@@ -153,6 +153,10 @@ private:
 
   // todo
   rclcpp::Subscription<Control>::SharedPtr sub_ackermann_cmd_;
+  //Adding subscription for the rear comming from the Lateral
+  rclcpp::Subscription<autoware_control_msgs::msg::Lateral>::SharedPtr sub_rear_steer_cmd_;
+  double current_rear_steer_cmd_{0.0};
+  rclcpp::Time last_rear_steer_cmd_time_{0, 0, RCL_ROS_TIME}; 
   rclcpp::Subscription<ActuationCommandStamped>::SharedPtr sub_actuation_cmd_;
 
   rclcpp::Service<ControlModeCommand>::SharedPtr srv_mode_req_;
