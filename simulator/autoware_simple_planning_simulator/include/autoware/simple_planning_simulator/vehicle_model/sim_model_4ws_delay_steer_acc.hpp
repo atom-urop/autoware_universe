@@ -61,19 +61,20 @@ public:
 private:
   const double MIN_TIME_CONSTANT;  //!< @brief minimum time constant
 
-  enum IDX {
-    X = 0,
-    Y,
-    YAW,
-    VX,
-    STEER,
-    ACCX,
-  };
-  enum IDX_U {
-    ACCX_DES = 0,
-    STEER_DES,
-    DRIVE_SHIFT,
-  };
+enum IDX {
+  X = 0,
+  Y,
+  YAW,
+  VX,
+  STEER_FRONT,
+  STEER_REAR,
+  ACCX,
+};
+enum IDX_U {
+  ACCX_DES = 0,
+  STEER_FRONT_DES,
+  STEER_REAR_DES,
+};
 
   const double vx_lim_;          //!< @brief velocity limit [m/s]
   const double vx_rate_lim_;     //!< @brief acceleration limit [m/ss]
@@ -83,6 +84,7 @@ private:
 
   std::deque<double> acc_input_queue_;       //!< @brief buffer for accel command
   std::deque<double> steer_input_queue_;     //!< @brief buffer for steering command
+  std::deque<double> steer_rear_input_queue_;  //!< @brief buffer for rear steering command
   const double acc_delay_;                   //!< @brief time delay for accel command [s]
   const double acc_time_constant_;           //!< @brief time constant for accel dynamics
   const double steer_delay_;                 //!< @brief time delay for steering command [s]
@@ -137,6 +139,8 @@ private:
    * @brief get vehicle steering angle
    */
   double getSteer() override;
+
+  double getSteerRear();
 
   /**
    * @brief update vehicle states
