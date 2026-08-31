@@ -99,9 +99,12 @@ void SimModel4wsDelaySteerAcc::update(const double & dt)
   delayed_input(IDX_U::STEER_REAR_DES) = steer_rear_input_queue_.front();
   steer_rear_input_queue_.pop_front();
 
+  //Adding for the 4Ws vehicle model
+    const auto prev_state = state_;
   updateRungeKutta(dt, delayed_input);
 
   state_(IDX::VX) = std::max(-vx_lim_, std::min(state_(IDX::VX), vx_lim_));
+    updateStateWithGear(state_, prev_state, gear_, dt);//Added for the 4Ws vehicle model
 }
 
 void SimModel4wsDelaySteerAcc::initializeInputQueue(const double & dt)
@@ -173,5 +176,37 @@ Eigen::VectorXd SimModel4wsDelaySteerAcc::calcModel(
 
   return d_state;
 }
+//Adding a function for the 4Ws vehicle model
+void SimModel4wsDelaySteerAcc::updateStateWithGear(
+  Eigen::VectorXd & state, const Eigen::VectorXd & prev_state, const uint8_t gear, const double dt)
+{
+  const auto setStopState = [&]() {
+    state(IDX::VX) = 0.0;
+    state(IDX::X) = prev_state(IDX::X);
+    state(IDX::Y) = prev_state(IDX::Y);
+    state(IDX::YAW) = prev_state(IDX::YAW);
+    state(IDX::ACCX) = (state(IDX::VX) - prev_state(IDX::VX)) / std::max(dt, 1.0e-5);
+  };
 
+  using autoware_vehicle_msgs::msg::GearCommand;
+  if (
+    gear == GearCommand::DRIVE || gear == GearCommand::DRIVE_2 || gear == GearCommand::DRIVE_3 ||
+    gear == GearCommand::DRIVE_4 || gear == GearCommand::DRIVE_5 || gear == GearCommand::DRIVE_6 ||
+    gear == GearCommand::DRIVE_7 || gear == GearCommand::DRIVE_8 || gear == GearCommand::DRIVE_9 ||
+    gear == GearCommand::DRIVE_10 || gear == GearCommand::DRIVE_11 ||
+    gear == GearCommand::DRIVE_12 || gear == GearCommand::DRIVE_13 ||
+    gear == GearCommand::DRIVE_14 || gear == GearCommand::DRIVE_15 ||
+    gear == GearCommand::DRIVE_16 || gear == GearCommand::DRIVE_17 ||
+    gear == GearCommand::DRIVE_18 || gear == GearCommand::LOW || gear == GearCommand::LOW_2) {
+    if (state(IDX::VX) < 0.0) {
+      setStopState();
+    }
+  } else if (gear == GearCommand::REVERSE || gear == GearCommand::REVERSE_2) {
+    if (state(IDX::VX) > 0.0) {
+      setStopState();
+    }
+  } else {  // including 'gear == GearCommand::PARK'
+    setStopState();
+  }
+}
 }  // namespace autoware::simulator::simple_planning_simulator

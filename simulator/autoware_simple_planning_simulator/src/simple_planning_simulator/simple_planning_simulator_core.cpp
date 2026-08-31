@@ -22,6 +22,7 @@
 #include "autoware_utils_rclcpp/parameter.hpp"
 #include "autoware_vehicle_info_utils/vehicle_info_utils.hpp"
 #include "rclcpp_components/register_node_macro.hpp"
+#include "autoware_vehicle_msgs/msg/gear_command.hpp"
 
 #include <autoware/lanelet2_utils/conversion.hpp>
 #include <autoware/lanelet2_utils/nn_search.hpp>

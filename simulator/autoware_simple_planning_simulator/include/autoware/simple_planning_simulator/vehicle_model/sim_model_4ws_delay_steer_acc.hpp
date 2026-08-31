@@ -154,6 +154,13 @@ enum IDX_U {
    * @param [in] input input vector to model
    */
   Eigen::VectorXd calcModel(const Eigen::VectorXd & state, const Eigen::VectorXd & input) override;
+  //Adding for the 4WS vehicle model
+    /**
+   * @brief stop the vehicle when the motion contradicts the current gear
+   */
+  void updateStateWithGear(
+    Eigen::VectorXd & state, const Eigen::VectorXd & prev_state, const uint8_t gear,
+    const double dt);
 };
 
 }  // namespace autoware::simulator::simple_planning_simulator
