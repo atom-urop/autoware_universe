@@ -52,7 +52,8 @@ autoware_vehicle_msgs::msg::VelocityReport to_velocity_report(
 {
   autoware_vehicle_msgs::msg::VelocityReport velocity;
   velocity.longitudinal_velocity = static_cast<double>(vehicle_model_ptr->getVx());
-  velocity.lateral_velocity = 0.0F;
+  velocity.lateral_velocity =//Added for the 4WS vehicle model interface
+    static_cast<decltype(velocity.lateral_velocity)>(vehicle_model_ptr->getVy());
   velocity.heading_rate = static_cast<double>(vehicle_model_ptr->getWz());
   return velocity;
 }
@@ -66,6 +67,7 @@ nav_msgs::msg::Odometry to_odometry(
   odometry.pose.pose.orientation = autoware_utils_geometry::create_quaternion_from_rpy(
     0.0, ego_pitch_angle, vehicle_model_ptr->getYaw());
   odometry.twist.twist.linear.x = vehicle_model_ptr->getVx();
+  odometry.twist.twist.linear.y = vehicle_model_ptr->getVy();//Added for 4WS vehicle model interface
   odometry.twist.twist.angular.z = vehicle_model_ptr->getWz();
 
   return odometry;
@@ -181,6 +183,7 @@ SimplePlanningSimulator::SimplePlanningSimulator(const rclcpp::NodeOptions & opt
     create_publisher<ActuationStatusStamped>("output/actuation_status", QoS{1});
   if (enable_pub_steer_) {
     pub_steer_ = create_publisher<SteeringReport>("output/steering", QoS{1});
+      pub_rear_steer_ = create_publisher<SteeringReport>("output/rear_steering", QoS{1});
   }
 
   /* set param callback */
@@ -533,6 +536,12 @@ void SimplePlanningSimulator::on_timer()
 
   if (enable_pub_steer_) {
     publish_steering(current_steer_);
+
+    SteeringReport rear_msg;
+    rear_msg.stamp = get_clock()->now();
+    rear_msg.steering_tire_angle =
+      static_cast<decltype(rear_msg.steering_tire_angle)>(vehicle_model_ptr_->getSteerRear());
+    pub_rear_steer_->publish(rear_msg);
   }
 
   if (vehicle_model_ptr_->shouldPublishActuationStatus()) {

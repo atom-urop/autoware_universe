@@ -130,6 +130,7 @@ private:
   rclcpp::Publisher<VelocityReport>::SharedPtr pub_velocity_;
   rclcpp::Publisher<Odometry>::SharedPtr pub_odom_;
   rclcpp::Publisher<SteeringReport>::SharedPtr pub_steer_;
+    rclcpp::Publisher<SteeringReport>::SharedPtr pub_rear_steer_;//Publishing the rear steering
   rclcpp::Publisher<AccelWithCovarianceStamped>::SharedPtr pub_acc_;
   rclcpp::Publisher<Imu>::SharedPtr pub_imu_;
   rclcpp::Publisher<ControlModeReport>::SharedPtr pub_control_mode_report_;

@@ -146,6 +146,8 @@ public:
    * @brief get vehicle steering angle
    */
   virtual double getSteer() = 0;
+  //Adding for the 4WS vehicle model interface
+  virtual double getSteerRear() { return 0.0; }
 
   /**
    * @brief get vehicle gear
