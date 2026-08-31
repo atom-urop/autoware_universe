@@ -132,6 +132,7 @@ Eigen::VectorXd SimModel4wsDelaySteerAcc::calcModel(
   const double acc = sat(state(IDX::ACCX), vx_rate_lim_, -vx_rate_lim_);
   const double yaw = state(IDX::YAW);
   const double steer = state(IDX::STEER_FRONT);
+  const double steer_rear = state(IDX::STEER_REAR);
   const double acc_des =
     sat(input(IDX_U::ACCX_DES), vx_rate_lim_, -vx_rate_lim_) * debug_acc_scaling_factor_;
   const double steer_des =
@@ -166,9 +167,10 @@ Eigen::VectorXd SimModel4wsDelaySteerAcc::calcModel(
     -steer_rear_diff_with_dead_band / steer_time_constant_, steer_rate_lim_, -steer_rate_lim_);
 
   Eigen::VectorXd d_state = Eigen::VectorXd::Zero(dim_x_);
-  d_state(IDX::X) = vel * cos(yaw);
-  d_state(IDX::Y) = vel * sin(yaw);
-  d_state(IDX::YAW) = vel * std::tan(steer) / wheelbase_;
+  const double vy = vel * std::tan(steer_rear);
+  d_state(IDX::X) = vel * cos(yaw) - vy * sin(yaw);
+  d_state(IDX::Y) = vel * sin(yaw) + vy * cos(yaw);
+  d_state(IDX::YAW) = vel * (std::tan(steer) - std::tan(steer_rear)) / wheelbase_;
   d_state(IDX::VX) = acc;
   d_state(IDX::STEER_FRONT) = steer_rate;
   d_state(IDX::STEER_REAR) = steer_rate_rear;//added for the 4WS steering vehicle model
