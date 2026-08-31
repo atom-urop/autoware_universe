@@ -94,6 +94,11 @@ void SimModel4wsDelaySteerAcc::update(const double & dt)
   delayed_input(IDX_U::STEER_FRONT_DES) = steer_input_queue_.front();
   steer_input_queue_.pop_front();
 
+  // --Adding for the 4WS vehicle model---
+  steer_rear_input_queue_.push_back(input_(IDX_U::STEER_REAR_DES));
+  delayed_input(IDX_U::STEER_REAR_DES) = steer_rear_input_queue_.front();
+  steer_rear_input_queue_.pop_front();
+
   updateRungeKutta(dt, delayed_input);
 
   state_(IDX::VX) = std::max(-vx_lim_, std::min(state_(IDX::VX), vx_lim_));
@@ -108,6 +113,11 @@ void SimModel4wsDelaySteerAcc::initializeInputQueue(const double & dt)
   size_t steer_input_queue_size = static_cast<size_t>(round(steer_delay_ / dt));
   steer_input_queue_.resize(steer_input_queue_size);
   std::fill(steer_input_queue_.begin(), steer_input_queue_.end(), 0.0);
+  // ---Adding for the 4WS model---
+
+  size_t steer_rear_input_queue_size = static_cast<size_t>(round(steer_delay_ / dt));
+  steer_rear_input_queue_.resize(steer_rear_input_queue_size);
+  std::fill(steer_rear_input_queue_.begin(), steer_rear_input_queue_.end(), 0.0);
 }
 
 Eigen::VectorXd SimModel4wsDelaySteerAcc::calcModel(
