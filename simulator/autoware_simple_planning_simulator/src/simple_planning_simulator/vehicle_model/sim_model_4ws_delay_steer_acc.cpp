@@ -136,12 +136,29 @@ Eigen::VectorXd SimModel4wsDelaySteerAcc::calcModel(
   const double steer_rate =
     sat(-steer_diff_with_dead_band / steer_time_constant_, steer_rate_lim_, -steer_rate_lim_);
 
+    // ---- rear axle: same actuator model as the front ----
+  const double steer_rear_des =
+    sat(input(IDX_U::STEER_REAR_DES), steer_lim_, -steer_lim_) * debug_steer_scaling_factor_;
+  const double steer_rear_diff = getSteerRear() - steer_rear_des;
+  const double steer_rear_diff_with_dead_band = std::invoke([&]() {
+    if (steer_rear_diff > steer_dead_band_) {
+      return steer_rear_diff - steer_dead_band_;
+    } else if (steer_rear_diff < -steer_dead_band_) {
+      return steer_rear_diff + steer_dead_band_;
+    } else {
+      return 0.0;
+    }
+  });
+  const double steer_rate_rear = sat(
+    -steer_rear_diff_with_dead_band / steer_time_constant_, steer_rate_lim_, -steer_rate_lim_);
+
   Eigen::VectorXd d_state = Eigen::VectorXd::Zero(dim_x_);
   d_state(IDX::X) = vel * cos(yaw);
   d_state(IDX::Y) = vel * sin(yaw);
   d_state(IDX::YAW) = vel * std::tan(steer) / wheelbase_;
   d_state(IDX::VX) = acc;
   d_state(IDX::STEER_FRONT) = steer_rate;
+  d_state(IDX::STEER_REAR) = steer_rate_rear;//added for the 4WS steering vehicle model
   d_state(IDX::ACCX) = -(acc - acc_des) / acc_time_constant_;
 
   return d_state;
