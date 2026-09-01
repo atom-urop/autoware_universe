@@ -438,6 +438,7 @@ INSTANTIATE_TEST_SUITE_P(
   TestForEachVehicleModelTrue, TestSimplePlanningSimulator,
   ::testing::Values(
     /* Ackermann type */
+    std::make_tuple(CommandType::Ackermann, "FOUR_WS_DELAY_STEER_ACC"),
     std::make_tuple(CommandType::Ackermann, "IDEAL_STEER_VEL"),
     std::make_tuple(CommandType::Ackermann, "IDEAL_STEER_ACC"),
     std::make_tuple(CommandType::Ackermann, "IDEAL_STEER_ACC_GEARED"),
