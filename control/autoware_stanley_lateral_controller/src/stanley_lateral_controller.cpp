@@ -21,6 +21,7 @@
 
 namespace autoware::motion::control::stanley_lateral_controller
 {
+
 StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 {
   m_traj_resample_dist =
@@ -49,6 +50,28 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 
   m_k_gain2 =
     node.declare_parameter<double>("k_gain2");
+}
+
+
+StanleyLateralController::~StanleyLateralController() = default;
+
+
+bool StanleyLateralController::isReady(
+  const trajectory_follower::InputData & input_data)
+{
+  (void)input_data;
+  return true;
+}
+
+
+trajectory_follower::LateralOutput StanleyLateralController::run(
+  trajectory_follower::InputData const & input_data)
+{
+  (void)input_data;
+
+  trajectory_follower::LateralOutput output;
+
+  return output;
 }
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

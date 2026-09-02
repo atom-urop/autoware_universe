@@ -17,6 +17,9 @@
 #include "autoware/mpc_lateral_controller/mpc_lateral_controller.hpp"
 #include "autoware/pid_longitudinal_controller/pid_longitudinal_controller.hpp"
 #include "autoware/pure_pursuit/autoware_pure_pursuit_lateral_controller.hpp"
+
+#include "autoware/stanley_lateral_controller/stanley_lateral_controller.hpp"
+
 #include "autoware_utils/ros/marker_helper.hpp"
 
 #include <autoware/trajectory_follower_base/lateral_controller_base.hpp>
@@ -77,6 +80,11 @@ Controller::Controller(const rclcpp::NodeOptions & node_options) : Node("control
         std::make_shared<autoware::pure_pursuit::PurePursuitLateralController>(*this);
       break;
     }
+    case LateralControllerMode::STANLEY: {
+      lateral_controller_ =
+        std::make_shared<stanley_lateral_controller::StanleyLateralController>(*this);
+      break;
+    }
     default:
       throw std::domain_error("[LateralController] invalid algorithm");
   }
@@ -126,6 +134,7 @@ Controller::LateralControllerMode Controller::getLateralControllerMode(
 {
   if (controller_mode == "mpc") return LateralControllerMode::MPC;
   if (controller_mode == "pure_pursuit") return LateralControllerMode::PURE_PURSUIT;
+  if (controller_mode == "stanley") return LateralControllerMode::STANLEY;
 
   return LateralControllerMode::INVALID;
 }
