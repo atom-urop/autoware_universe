@@ -1,0 +1,16 @@
+/**:
+  ros__parameters:
+    # -- system --
+    traj_resample_dist: 0.1         # path resampling interval [m]
+
+    # -- steer offset --
+    enable_auto_steering_offset_removal: true
+    update_vel_threshold: 5.56
+    update_steer_threshold: 0.035
+    average_num: 1000
+    steering_offset_limit: 0.02
+
+    # -- Stanley controller --
+    k_gain1: 0.8
+    k_soft: 1.5
+    k_gain2: 15.0
