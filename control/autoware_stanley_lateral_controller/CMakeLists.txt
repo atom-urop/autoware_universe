@@ -8,6 +8,7 @@ set(STANLEY_LAT_CON_LIB ${PROJECT_NAME}_lib)
 
 ament_auto_add_library(${STANLEY_LAT_CON_LIB} SHARED
   src/stanley_lateral_controller.cpp
+  src/stanley_utils.cpp
 )
 
 ament_auto_package(

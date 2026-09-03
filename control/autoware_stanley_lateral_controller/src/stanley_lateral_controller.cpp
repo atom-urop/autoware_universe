@@ -14,6 +14,8 @@
 
 #include "autoware/stanley_lateral_controller/stanley_lateral_controller.hpp"
 
+#include "autoware/stanley_lateral_controller/stanley_utils.hpp"
+
 #include <rclcpp/rclcpp.hpp>
 
 #include <cmath>
@@ -26,6 +28,15 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 {
   m_traj_resample_dist =
     node.declare_parameter<double>("traj_resample_dist");
+
+  m_wheel_base =
+    node.declare_parameter<double>("wheel_base");
+
+  m_tau_max =
+    node.declare_parameter<double>("tau_max");
+
+  m_d0 =
+    node.declare_parameter<double>("d0");
 
   m_enable_auto_steering_offset_removal =
     node.declare_parameter<bool>("enable_auto_steering_offset_removal");
@@ -104,7 +115,17 @@ bool StanleyLateralController::isReady(
 trajectory_follower::LateralOutput StanleyLateralController::run(
   trajectory_follower::InputData const & input_data)
 {
-  (void)input_data;
+  // Set current input data
+  setTrajectory(input_data.current_trajectory);
+
+  m_current_kinematic_state = input_data.current_odometry;
+  m_current_steering = input_data.current_steering;
+
+  const auto front_pose = rearToFrontOdometry(
+  m_current_kinematic_state,
+  m_wheel_base,
+  m_tau_max,
+  m_d0);
 
   trajectory_follower::LateralOutput output;
 

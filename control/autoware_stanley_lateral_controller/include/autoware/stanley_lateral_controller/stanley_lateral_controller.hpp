@@ -50,6 +50,9 @@ private:
 
   // -- system --
   double m_traj_resample_dist;
+  double m_wheel_base;
+  double m_tau_max;
+  double m_d0;
 
   // -- steer offset --
   bool m_enable_auto_steering_offset_removal;
