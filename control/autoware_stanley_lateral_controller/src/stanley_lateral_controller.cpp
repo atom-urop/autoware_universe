@@ -121,7 +121,7 @@ trajectory_follower::LateralOutput StanleyLateralController::run(
   m_current_kinematic_state = input_data.current_odometry;
   m_current_steering = input_data.current_steering;
 
-  const auto front_pose = rearToFrontOdometry(
+  const auto front_pose = rearToFrontOdometryPred(
   m_current_kinematic_state,
   m_wheel_base,
   m_tau_max,
