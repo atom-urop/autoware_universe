@@ -52,16 +52,53 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
     node.declare_parameter<double>("k_gain2");
 }
 
+void StanleyLateralController::setTrajectory(const Trajectory & msg)
+{
+  m_current_trajectory = msg;
+}
 
-StanleyLateralController::~StanleyLateralController() = default;
+bool StanleyLateralController::isValidTrajectory(const Trajectory & traj) const
+{
+  for (const auto & p : traj.points) {
+    if (
+      !std::isfinite(p.pose.position.x) ||
+      !std::isfinite(p.pose.position.y) ||
+      !std::isfinite(p.pose.position.z) ||
+      !std::isfinite(p.pose.orientation.w) ||
+      !std::isfinite(p.pose.orientation.x) ||
+      !std::isfinite(p.pose.orientation.y) ||
+      !std::isfinite(p.pose.orientation.z) ||
+      !std::isfinite(p.longitudinal_velocity_mps) ||
+      !std::isfinite(p.lateral_velocity_mps) ||
+      !std::isfinite(p.heading_rate_rps) ||
+      !std::isfinite(p.front_wheel_angle_rad) ||
+      !std::isfinite(p.rear_wheel_angle_rad)) {
+      return false;
+    }
+  }
 
+  return true;
+}
 
 bool StanleyLateralController::isReady(
   const trajectory_follower::InputData & input_data)
 {
-  (void)input_data;
+  m_current_kinematic_state = input_data.current_odometry;
+  m_current_steering = input_data.current_steering;
+
+  setTrajectory(input_data.current_trajectory);
+
+  if (m_current_trajectory.points.size() < 3) {
+    return false;
+  }
+
+  if (!isValidTrajectory(m_current_trajectory)) {
+    return false;
+  }
+
   return true;
 }
+
 
 
 trajectory_follower::LateralOutput StanleyLateralController::run(
