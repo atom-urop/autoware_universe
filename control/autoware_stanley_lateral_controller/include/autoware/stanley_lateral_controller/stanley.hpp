@@ -1,0 +1,52 @@
+// Copyright 2026 The Autoware Foundation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef AUTOWARE__STANLEY_LATERAL_CONTROLLER__STANLEY_HPP_
+#define AUTOWARE__STANLEY_LATERAL_CONTROLLER__STANLEY_HPP_
+
+#include "autoware_control_msgs/msg/lateral.hpp"
+#include "autoware_planning_msgs/msg/trajectory.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+
+#include <string>
+
+namespace autoware::motion::control::stanley_lateral_controller
+{
+
+using autoware_control_msgs::msg::Lateral;
+using autoware_planning_msgs::msg::Trajectory;
+using nav_msgs::msg::Odometry;
+
+struct ResultWithReason
+{
+  bool result{false};
+  std::string reason{""};
+};
+
+class Stanley
+{
+public:
+  explicit Stanley() = default;
+
+ResultWithReason calculateStanley(
+  const Trajectory & reference_trajectory,
+  const Odometry & current_front_odometry,
+  const Odometry & predicted_front_odometry,
+  Lateral & ctrl_cmd,
+  double & rear_steer);
+};
+
+}  // namespace autoware::motion::control::stanley_lateral_controller
+
+#endif  // AUTOWARE__STANLEY_LATERAL_CONTROLLER__STANLEY_HPP_

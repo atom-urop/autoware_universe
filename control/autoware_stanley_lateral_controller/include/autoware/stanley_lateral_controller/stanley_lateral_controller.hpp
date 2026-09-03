@@ -16,6 +16,7 @@
 #define AUTOWARE__STANLEY_LATERAL_CONTROLLER__STANLEY_LATERAL_CONTROLLER_HPP_
 
 #include "autoware/trajectory_follower_base/lateral_controller_base.hpp"
+#include "autoware/stanley_lateral_controller/stanley.hpp"
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -53,6 +54,9 @@ private:
   double m_wheel_base;
   double m_tau_max;
   double m_d0;
+
+  // -- Stanley algorithm --
+  std::shared_ptr<Stanley> m_stanley;
 
   // -- steer offset --
   bool m_enable_auto_steering_offset_removal;

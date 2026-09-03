@@ -26,6 +26,9 @@ namespace autoware::motion::control::stanley_lateral_controller
 
 StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 {
+
+  m_stanley = std::make_shared<Stanley>();
+
   m_traj_resample_dist =
     node.declare_parameter<double>("traj_resample_dist");
 
@@ -121,15 +124,38 @@ trajectory_follower::LateralOutput StanleyLateralController::run(
   m_current_kinematic_state = input_data.current_odometry;
   m_current_steering = input_data.current_steering;
 
-  const auto front_pose = rearToFrontOdometryPred(
+// Current front axle odometry
+const auto current_front_odometry = rearToFrontOdometry(
+  m_current_kinematic_state,
+  m_wheel_base);
+
+// Predicted front axle odometry
+const auto predicted_front_odometry = rearToFrontOdometryPred(
   m_current_kinematic_state,
   m_wheel_base,
   m_tau_max,
   m_d0);
 
-  trajectory_follower::LateralOutput output;
+trajectory_follower::LateralOutput output;
 
+double rear_steer = 0.0;
+
+const auto stanley_result = m_stanley->calculateStanley(
+  m_current_trajectory,
+  current_front_odometry,
+  predicted_front_odometry,
+  output.control_cmd,
+  rear_steer);
+
+if (!stanley_result.result) {
+  RCLCPP_WARN(
+    rclcpp::get_logger("stanley_lateral_controller"),
+    "Stanley calculation failed: %s",
+    stanley_result.reason.c_str());
   return output;
+}
+
+return output;
 }
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

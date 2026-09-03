@@ -6,6 +6,10 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
+nav_msgs::msg::Odometry rearToFrontOdometry(
+  const nav_msgs::msg::Odometry & rear_pose,
+  double wheel_base);
+
 nav_msgs::msg::Odometry rearToFrontOdometryPred(
   const nav_msgs::msg::Odometry & rear_pose,
   double wheel_base,

@@ -10,6 +10,51 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
+ nav_msgs::msg::Odometry rearToFrontOdometry(
+  const nav_msgs::msg::Odometry & rear_pose,
+  const double wheel_base)
+{
+  nav_msgs::msg::Odometry front_pose = rear_pose;
+
+  // Current rear axle state
+  const double x_r = rear_pose.pose.pose.position.x;
+  const double y_r = rear_pose.pose.pose.position.y;
+  const double yaw = tf2::getYaw(rear_pose.pose.pose.orientation);
+
+  // Rear axle velocity in body frame
+  const double vx_body = rear_pose.twist.twist.linear.x;
+  const double vy_body = rear_pose.twist.twist.linear.y;
+  const double yaw_rate = rear_pose.twist.twist.angular.z;
+
+  // Rear axle -> front axle
+  const double x_f =
+    x_r + wheel_base * std::cos(yaw);
+
+  const double y_f =
+    y_r + wheel_base * std::sin(yaw);
+
+  // Front axle velocity in body frame
+  const double vx_front_body = vx_body;
+  const double vy_front_body =
+    vy_body + yaw_rate * wheel_base;
+
+  // Front axle pose
+  front_pose.pose.pose.position.x = x_f;
+  front_pose.pose.pose.position.y = y_f;
+  front_pose.pose.pose.position.z = rear_pose.pose.pose.position.z;
+
+  front_pose.pose.pose.orientation =
+    autoware::universe_utils::createQuaternionFromYaw(yaw);
+
+  // Front axle velocity in body frame
+  front_pose.twist.twist.linear.x = vx_front_body;
+  front_pose.twist.twist.linear.y = vy_front_body;
+  front_pose.twist.twist.linear.z =
+    rear_pose.twist.twist.linear.z;
+
+  return front_pose;
+}
+
 nav_msgs::msg::Odometry rearToFrontOdometryPred(
   const nav_msgs::msg::Odometry & rear_pose,
   const double wheel_base,
