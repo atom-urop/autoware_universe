@@ -24,6 +24,12 @@ ResultWithReason Stanley::calculateStanley(
   Lateral & ctrl_cmd,
   double & rear_steer)
 {
+  (void)reference_trajectory;
+  (void)current_front_odometry;
+  (void)predicted_front_odometry;
+  (void)ctrl_cmd;
+  (void)rear_steer;
+
   return ResultWithReason{true};
 }
 
