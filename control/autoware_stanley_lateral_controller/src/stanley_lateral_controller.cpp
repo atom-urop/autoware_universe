@@ -41,6 +41,19 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
   m_d0 =
     node.declare_parameter<double>("d0");
 
+  m_ego_nearest_dist_threshold =
+  node.has_parameter("ego_nearest_dist_threshold")
+    ? node.get_parameter("ego_nearest_dist_threshold").as_double()
+    : 3.0;
+
+  m_ego_nearest_yaw_threshold =
+  node.has_parameter("ego_nearest_yaw_threshold")
+    ? node.get_parameter("ego_nearest_yaw_threshold").as_double()
+    : M_PI_2;
+
+  m_stanley->ego_nearest_dist_threshold = m_ego_nearest_dist_threshold;
+  m_stanley->ego_nearest_yaw_threshold = m_ego_nearest_yaw_threshold;
+
   m_enable_auto_steering_offset_removal =
     node.declare_parameter<bool>("enable_auto_steering_offset_removal");
 

@@ -1,6 +1,8 @@
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
 
+#include <autoware/motion_utils/trajectory/trajectory.hpp>
 #include <autoware/universe_utils/geometry/geometry.hpp>
+#include "autoware_utils/math/normalization.hpp"
 
 #include <tf2/utils.h>
 
@@ -9,6 +11,99 @@
 
 namespace autoware::motion::control::stanley_lateral_controller
 {
+
+geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
+  const autoware_planning_msgs::msg::Trajectory & trajectory,
+  const geometry_msgs::msg::Pose & self_pose,
+  const double max_dist,
+  const double max_yaw)
+{
+  if (trajectory.points.empty()) {
+    return geometry_msgs::msg::Pose{};
+  }
+
+  const size_t nearest_idx =
+    autoware::motion_utils::findFirstNearestIndexWithSoftConstraints(
+      trajectory.points, self_pose, max_dist, max_yaw);
+
+    const size_t traj_size = trajectory.points.size();
+
+  if (traj_size == 1) {
+    return trajectory.points.at(0).pose;
+  }
+
+  size_t prev_idx;
+  size_t next_idx;
+
+  if (nearest_idx == 0) {
+    prev_idx = 0;
+    next_idx = 1;
+  } else if (nearest_idx == traj_size - 1) {
+    prev_idx = traj_size - 2;
+    next_idx = traj_size - 1;
+  } else {
+    const double signed_length =
+      autoware::motion_utils::calcLongitudinalOffsetToSegment(
+        trajectory.points, nearest_idx, self_pose.position);
+
+    if (signed_length <= 0.0) {
+      prev_idx = nearest_idx - 1;
+      next_idx = nearest_idx;
+    } else {
+      prev_idx = nearest_idx;
+      next_idx = nearest_idx + 1;
+    }
+  }
+
+   const auto & prev_point = trajectory.points.at(prev_idx);
+  const auto & next_point = trajectory.points.at(next_idx);
+
+  const double segment_length =
+    autoware_utils::calc_distance2d(
+      prev_point.pose.position,
+      next_point.pose.position);
+
+  if (segment_length < 1.0E-5) {
+    return trajectory.points.at(nearest_idx).pose;
+  }
+
+  const double longitudinal_offset =
+    autoware::motion_utils::calcLongitudinalOffsetToSegment(
+      trajectory.points,
+      prev_idx,
+      self_pose.position);
+
+  const double ratio =
+    std::clamp(longitudinal_offset / segment_length, 0.0, 1.0);
+
+  geometry_msgs::msg::Pose nearest_pose;
+
+  nearest_pose.position.x =
+    (1.0 - ratio) * prev_point.pose.position.x +
+    ratio * next_point.pose.position.x;
+
+  nearest_pose.position.y =
+    (1.0 - ratio) * prev_point.pose.position.y +
+    ratio * next_point.pose.position.y;
+
+  const double prev_yaw =
+    tf2::getYaw(prev_point.pose.orientation);
+
+  const double next_yaw =
+    tf2::getYaw(next_point.pose.orientation);
+
+  const double yaw_error =
+    autoware_utils_math::normalize_radian(prev_yaw - next_yaw);
+
+  const double nearest_yaw =
+    autoware_utils_math::normalize_radian(
+      next_yaw + (1.0 - ratio) * yaw_error);
+
+  nearest_pose.orientation =
+    autoware::universe_utils::createQuaternionFromYaw(nearest_yaw);
+
+  return nearest_pose;
+}
 
  nav_msgs::msg::Odometry rearToFrontOdometry(
   const nav_msgs::msg::Odometry & rear_pose,

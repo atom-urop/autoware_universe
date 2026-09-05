@@ -55,6 +55,9 @@ private:
   double m_tau_max;
   double m_d0;
 
+  double m_ego_nearest_dist_threshold;
+  double m_ego_nearest_yaw_threshold;
+
   // -- Stanley algorithm --
   std::shared_ptr<Stanley> m_stanley;
 

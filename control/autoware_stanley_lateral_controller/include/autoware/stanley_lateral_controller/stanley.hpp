@@ -34,6 +34,12 @@ struct ResultWithReason
   std::string reason{""};
 };
 
+struct StanleyData
+{
+  double lateral_error;
+  double reference_curvature;
+};
+
 class Stanley
 {
 public:
@@ -45,6 +51,15 @@ ResultWithReason calculateStanley(
   const Odometry & predicted_front_odometry,
   Lateral & ctrl_cmd,
   double & rear_steer);
+
+ResultWithReason getData(
+  const Trajectory & reference_trajectory,
+  const Odometry & current_front_odometry,
+  const Odometry & predicted_front_odometry,
+  StanleyData & data);
+
+double ego_nearest_dist_threshold{3.0};
+double ego_nearest_yaw_threshold{1.5707963267948966};
 };
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

@@ -14,6 +14,10 @@
 
 #include "autoware/stanley_lateral_controller/stanley.hpp"
 
+#include <autoware/motion_utils/trajectory/trajectory.hpp>
+
+#include "autoware/stanley_lateral_controller/stanley_utils.hpp"
+
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
@@ -29,6 +33,31 @@ ResultWithReason Stanley::calculateStanley(
   (void)predicted_front_odometry;
   (void)ctrl_cmd;
   (void)rear_steer;
+
+  return ResultWithReason{true};
+}
+
+ResultWithReason Stanley::getData(
+  const Trajectory & reference_trajectory,
+  const Odometry & current_front_odometry,
+  const Odometry & predicted_front_odometry,
+  StanleyData & data)
+{
+  const auto current_nearest_pose = calcNearestPoseInterpStanley(
+    reference_trajectory,
+    current_front_odometry.pose.pose,
+    ego_nearest_dist_threshold,
+    ego_nearest_yaw_threshold);
+
+  const auto predicted_nearest_pose = calcNearestPoseInterpStanley(
+    reference_trajectory,
+    predicted_front_odometry.pose.pose,
+    ego_nearest_dist_threshold,
+    ego_nearest_yaw_threshold);
+
+  (void)current_nearest_pose;
+  (void)predicted_nearest_pose;
+  (void)data;
 
   return ResultWithReason{true};
 }
