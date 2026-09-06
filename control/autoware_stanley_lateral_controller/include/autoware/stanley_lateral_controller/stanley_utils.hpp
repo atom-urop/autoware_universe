@@ -14,7 +14,8 @@ geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
   const autoware_planning_msgs::msg::Trajectory & trajectory,
   const geometry_msgs::msg::Pose & self_pose,
   double max_dist,
-  double max_yaw);
+  double max_yaw,
+  size_t & nearest_idx);
 
 nav_msgs::msg::Odometry rearToFrontOdometry(
   const nav_msgs::msg::Odometry & rear_pose,

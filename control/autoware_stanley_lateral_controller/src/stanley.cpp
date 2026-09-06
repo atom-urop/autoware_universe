@@ -43,17 +43,23 @@ ResultWithReason Stanley::getData(
   const Odometry & predicted_front_odometry,
   StanleyData & data)
 {
+  size_t current_nearest_idx;
+
   const auto current_nearest_pose = calcNearestPoseInterpStanley(
     reference_trajectory,
     current_front_odometry.pose.pose,
     ego_nearest_dist_threshold,
-    ego_nearest_yaw_threshold);
+    ego_nearest_yaw_threshold,
+    current_nearest_idx);
+
+  size_t predicted_nearest_idx;
 
   const auto predicted_nearest_pose = calcNearestPoseInterpStanley(
     reference_trajectory,
     predicted_front_odometry.pose.pose,
     ego_nearest_dist_threshold,
-    ego_nearest_yaw_threshold);
+    ego_nearest_yaw_threshold,
+    predicted_nearest_idx);
 
   (void)current_nearest_pose;
   (void)predicted_nearest_pose;

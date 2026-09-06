@@ -16,13 +16,17 @@ geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
   const autoware_planning_msgs::msg::Trajectory & trajectory,
   const geometry_msgs::msg::Pose & self_pose,
   const double max_dist,
-  const double max_yaw)
+  const double max_yaw,
+  size_t & nearest_idx)
 {
+
+  nearest_idx = 0;
+  
   if (trajectory.points.empty()) {
     return geometry_msgs::msg::Pose{};
   }
 
-  const size_t nearest_idx =
+  nearest_idx =
     autoware::motion_utils::findFirstNearestIndexWithSoftConstraints(
       trajectory.points, self_pose, max_dist, max_yaw);
 
