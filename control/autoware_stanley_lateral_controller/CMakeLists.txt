@@ -27,4 +27,12 @@ if(BUILD_TESTING)
   target_link_libraries(test_stanley_utils
     ${STANLEY_LAT_CON_LIB}
   )
+
+  ament_add_gtest(test_stanley
+    test/test_stanley.cpp
+  )
+
+  target_link_libraries(test_stanley
+    ${STANLEY_LAT_CON_LIB}
+  )
 endif()
