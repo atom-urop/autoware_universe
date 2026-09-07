@@ -12,6 +12,24 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
+double calcLateralErrorStanley(
+  const nav_msgs::msg::Odometry & ego_odometry,
+  const geometry_msgs::msg::Pose & nearest_pose)
+{
+  const double err_x =
+    ego_odometry.pose.pose.position.x - nearest_pose.position.x;
+
+  const double err_y =
+    ego_odometry.pose.pose.position.y - nearest_pose.position.y;
+
+  const double ref_yaw =
+    tf2::getYaw(nearest_pose.orientation);
+
+  return
+    std::sin(ref_yaw) * err_x -
+    std::cos(ref_yaw) * err_y;
+}
+
 geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
   const autoware_planning_msgs::msg::Trajectory & trajectory,
   const geometry_msgs::msg::Pose & self_pose,
@@ -21,7 +39,7 @@ geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
 {
 
   nearest_idx = 0;
-  
+
   if (trajectory.points.empty()) {
     return geometry_msgs::msg::Pose{};
   }

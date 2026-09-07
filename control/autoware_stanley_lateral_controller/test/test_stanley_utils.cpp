@@ -448,4 +448,136 @@ TEST(StanleyUtilsTest, CalcNearestPoseInterpStanleyDistanceThreshold)
     1e-9);
 }
 
+TEST(StanleyUtilsTest, CalcLateralErrorStanleyStraightTrajectory)
+{
+  nav_msgs::msg::Odometry ego_odometry;
+  geometry_msgs::msg::Pose nearest_pose;
+
+  // Reference point at (0, 0), yaw = 0.
+  nearest_pose.position.x = 0.0;
+  nearest_pose.position.y = 0.0;
+  nearest_pose.orientation.x = 0.0;
+  nearest_pose.orientation.y = 0.0;
+  nearest_pose.orientation.z = 0.0;
+  nearest_pose.orientation.w = 1.0;
+
+  // Ego front axle at (0, -1).
+  // The vehicle is on the right side of the trajectory.
+  ego_odometry.pose.pose.position.x = 0.0;
+  ego_odometry.pose.pose.position.y = -1.0;
+
+  const double lateral_error =
+    calcLateralErrorStanley(
+      ego_odometry,
+      nearest_pose);
+
+  // For ref_yaw = 0:
+  // lateral_error = -err_y
+  // err_y = -1 -> lateral_error = +1
+  EXPECT_NEAR(lateral_error, 1.0, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcLateralErrorStanleyStraightTrajectoryLeft)
+{
+  nav_msgs::msg::Odometry ego_odometry;
+  geometry_msgs::msg::Pose nearest_pose;
+
+  // Reference point at (0, 0), yaw = 0.
+  nearest_pose.position.x = 0.0;
+  nearest_pose.position.y = 0.0;
+  nearest_pose.orientation.x = 0.0;
+  nearest_pose.orientation.y = 0.0;
+  nearest_pose.orientation.z = 0.0;
+  nearest_pose.orientation.w = 1.0;
+
+  // Ego front axle at (0, +1).
+  // The vehicle is on the left side of the trajectory.
+  ego_odometry.pose.pose.position.x = 0.0;
+  ego_odometry.pose.pose.position.y = 1.0;
+
+  const double lateral_error =
+    calcLateralErrorStanley(
+      ego_odometry,
+      nearest_pose);
+
+  // For ref_yaw = 0:
+  // lateral_error = -err_y
+  // err_y = +1 -> lateral_error = -1
+  EXPECT_NEAR(lateral_error, -1.0, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcLateralErrorStanleyDiagonalTrajectory)
+{
+  nav_msgs::msg::Odometry ego_odometry;
+  geometry_msgs::msg::Pose nearest_pose;
+
+  const double ref_yaw = M_PI / 4.0;
+
+  // Reference point at (0, 0), yaw = 45 deg.
+  nearest_pose.position.x = 0.0;
+  nearest_pose.position.y = 0.0;
+  nearest_pose.orientation.x = 0.0;
+  nearest_pose.orientation.y = 0.0;
+  nearest_pose.orientation.z = std::sin(ref_yaw / 2.0);
+  nearest_pose.orientation.w = std::cos(ref_yaw / 2.0);
+
+  // Ego is displaced by 1 m to the right of the trajectory.
+  //
+  // Right-hand normal to a trajectory with yaw = pi/4:
+  //
+  // [ sin(yaw) ]
+  // [-cos(yaw) ]
+  //
+  // Therefore:
+  // ego = [sin(pi/4), -cos(pi/4)]
+  ego_odometry.pose.pose.position.x =
+    std::sin(ref_yaw);
+
+  ego_odometry.pose.pose.position.y =
+    -std::cos(ref_yaw);
+
+  const double lateral_error =
+    calcLateralErrorStanley(
+      ego_odometry,
+      nearest_pose);
+
+  EXPECT_NEAR(lateral_error, 1.0, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcLateralErrorStanleyVerticalTrajectory)
+{
+  nav_msgs::msg::Odometry ego_odometry;
+  geometry_msgs::msg::Pose nearest_pose;
+
+  const double ref_yaw = M_PI / 2.0;
+
+  // Reference point at (0, 0), yaw = 90 deg.
+  nearest_pose.position.x = 0.0;
+  nearest_pose.position.y = 0.0;
+  nearest_pose.orientation.x = 0.0;
+  nearest_pose.orientation.y = 0.0;
+  nearest_pose.orientation.z = std::sin(ref_yaw / 2.0);
+  nearest_pose.orientation.w = std::cos(ref_yaw / 2.0);
+
+  // Ego is displaced by 1 m to the right of the trajectory.
+  //
+  // For yaw = pi/2:
+  //
+  // [ sin(yaw) ]   [ 1 ]
+  // [-cos(yaw) ] = [ 0 ]
+  //
+  // Therefore the ego position is (1, 0).
+  ego_odometry.pose.pose.position.x = 1.0;
+  ego_odometry.pose.pose.position.y = 0.0;
+
+  const double lateral_error =
+    calcLateralErrorStanley(
+      ego_odometry,
+      nearest_pose);
+
+  // For ref_yaw = pi/2:
+  // lateral_error = err_x = +1.
+  EXPECT_NEAR(lateral_error, 1.0, 1e-9);
+}
+
 }  // namespace autoware::motion::control::stanley_lateral_controller

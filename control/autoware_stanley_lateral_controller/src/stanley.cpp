@@ -61,9 +61,15 @@ ResultWithReason Stanley::getData(
     ego_nearest_yaw_threshold,
     predicted_nearest_idx);
 
+  const double predicted_lateral_error = calcLateralErrorStanley(
+    predicted_front_odometry,
+    predicted_nearest_pose);
+
+  data.lateral_error = predicted_lateral_error;
+
   (void)current_nearest_pose;
-  (void)predicted_nearest_pose;
-  (void)data;
+
+  
 
   return ResultWithReason{true};
 }

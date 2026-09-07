@@ -10,6 +10,10 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
+double calcLateralErrorStanley(
+  const nav_msgs::msg::Odometry & ego_odometry,
+  const geometry_msgs::msg::Pose & nearest_pose);
+
 geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
   const autoware_planning_msgs::msg::Trajectory & trajectory,
   const geometry_msgs::msg::Pose & self_pose,
