@@ -18,8 +18,22 @@
 
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
 
+
+
 namespace autoware::motion::control::stanley_lateral_controller
 {
+
+Stanley::Stanley(
+  const double traj_resample_dist,
+  const double curvature_calculation_distance,
+  const double wheel_base,
+  const double max_steer_angle)
+: m_traj_resample_dist(traj_resample_dist),
+  m_curvature_calculation_distance(curvature_calculation_distance),
+  m_wheel_base(wheel_base),
+  m_max_steer_angle(max_steer_angle)
+{
+}
 
 ResultWithReason Stanley::calculateStanley(
   const Trajectory & reference_trajectory,
@@ -66,6 +80,32 @@ ResultWithReason Stanley::getData(
     predicted_nearest_pose);
 
   data.lateral_error = predicted_lateral_error;
+
+  const double predicted_reference_curvature = calcReferenceCurvatureStanley(
+  reference_trajectory,
+  predicted_nearest_idx,
+  m_traj_resample_dist,
+  m_curvature_calculation_distance);
+
+  const double current_reference_curvature = calcReferenceCurvatureStanley(
+  reference_trajectory,
+  current_nearest_idx,
+  m_traj_resample_dist,
+  m_curvature_calculation_distance);
+
+  const double reference_curvature =
+  std::abs(predicted_reference_curvature) >= std::abs(current_reference_curvature)
+    ? predicted_reference_curvature
+    : current_reference_curvature;
+
+  const double curvature_max =
+    std::sin(2.0 * m_max_steer_angle) /
+    (m_wheel_base * std::cos(-m_max_steer_angle));
+
+  data.reference_curvature =
+    std::copysign(
+      std::min(std::abs(reference_curvature), curvature_max),
+      reference_curvature);
 
   (void)current_nearest_pose;
 

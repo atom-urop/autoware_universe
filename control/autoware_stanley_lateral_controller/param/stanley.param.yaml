@@ -1,7 +1,8 @@
 /**:
   ros__parameters:
     # -- system --
-    traj_resample_dist: 0.1         # path resampling interval [m]
+    traj_resample_dist: 0.1         # Distrance between reference trajectory points [m]
+    curvature_calculation_distance: 2        # Distance between i-20 and i / i and i+20 in [m]
 
     # -- steer offset --
     enable_auto_steering_offset_removal: true

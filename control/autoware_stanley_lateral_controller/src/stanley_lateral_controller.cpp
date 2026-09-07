@@ -27,13 +27,23 @@ namespace autoware::motion::control::stanley_lateral_controller
 StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 {
 
-  m_stanley = std::make_shared<Stanley>();
-
-  m_traj_resample_dist =
+  const double traj_resample_dist =
     node.declare_parameter<double>("traj_resample_dist");
+
+  const double curvature_calculation_distance =
+    node.declare_parameter<double>("curvature_calculation_distance");
 
   m_wheel_base =
     node.declare_parameter<double>("wheel_base");
+
+  m_max_steer_angle =
+  node.declare_parameter<double>("max_steer_angle");
+
+  m_stanley = std::make_shared<Stanley>(
+    traj_resample_dist,
+    curvature_calculation_distance,
+    m_wheel_base,
+    m_max_steer_angle);
 
   m_tau_max =
     node.declare_parameter<double>("tau_max");

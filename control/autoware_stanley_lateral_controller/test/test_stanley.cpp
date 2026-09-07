@@ -11,7 +11,11 @@ namespace autoware::motion::control::stanley_lateral_controller
 
 TEST(StanleyTest, GetDataPredictedLateralError)
 {
-  Stanley stanley;
+  Stanley stanley(
+    0.1,  // traj_resample_dist [m]
+    2.0,  // curvature_calculation_distance [m]
+    2.0,  // ATOM wheelbase [m]
+    0.7); // ATOM max steer angle [rad]
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 

@@ -6,6 +6,10 @@
 
 #include <tf2/utils.h>
 
+#include <utility>
+
+#include <vector>
+
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
@@ -578,6 +582,72 @@ TEST(StanleyUtilsTest, CalcLateralErrorStanleyVerticalTrajectory)
   // For ref_yaw = pi/2:
   // lateral_error = err_x = +1.
   EXPECT_NEAR(lateral_error, 1.0, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvature)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Three points on a circle of radius 5 m.
+  // The middle point is at the top of the circle.
+  const double R = 5.0;
+
+  const double x0 = -R;
+  const double y0 = 0.0;
+
+  const double x1 = 0.0;
+  const double y1 = R;
+
+  const double x2 = R;
+  const double y2 = 0.0;
+
+  for (const auto & [x, y] :
+       std::vector<std::pair<double, double>>{
+         {x0, y0},
+         {x1, y1},
+         {x2, y2}})
+  {
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = x;
+    point.pose.position.y = y;
+    trajectory.points.push_back(point);
+  }
+
+  const double curvature = calcReferenceCurvatureStanley(
+    trajectory,
+    1,
+    1.0,
+    1.0);
+
+  EXPECT_NEAR(std::abs(curvature), 1.0 / R, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureSign)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Left turn: counter-clockwise circular arc.
+  const double R = 5.0;
+
+  for (const auto & [x, y] :
+       std::vector<std::pair<double, double>>{
+         {-R, 0.0},
+         {0.0, R},
+         {R, 0.0}})
+  {
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = x;
+    point.pose.position.y = y;
+    trajectory.points.push_back(point);
+  }
+
+  const double curvature = calcReferenceCurvatureStanley(
+    trajectory,
+    1,
+    1.0,
+    1.0);
+
+  EXPECT_NEAR(curvature, -1.0 / R, 1e-9);
 }
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

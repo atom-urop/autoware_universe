@@ -2,6 +2,7 @@
 
 #include <autoware/motion_utils/trajectory/trajectory.hpp>
 #include <autoware/universe_utils/geometry/geometry.hpp>
+#include <autoware_utils_geometry/geometry.hpp>
 #include "autoware_utils/math/normalization.hpp"
 
 #include <tf2/utils.h>
@@ -11,6 +12,77 @@
 
 namespace autoware::motion::control::stanley_lateral_controller
 {
+
+double calcReferenceCurvatureStanley(
+  const autoware_planning_msgs::msg::Trajectory & trajectory,
+  const size_t nearest_idx,
+  const double traj_resample_dist,
+  const double curvature_calculation_distance)
+{
+  if (trajectory.points.size() < 3) {
+    return 0.0;
+  }
+
+  // Calculate the index distance corresponding to the desired
+  // curvature calculation distance.
+  size_t idx_dist = static_cast<size_t>(
+    std::max(
+      static_cast<int>(curvature_calculation_distance / traj_resample_dist),
+      1));
+
+  // Same limitation used by Autoware.
+  const auto max_idx_dist =
+    static_cast<size_t>(
+      std::floor(
+        static_cast<double>(trajectory.points.size() - 1) / 2.0));
+
+  idx_dist = std::max(
+    static_cast<size_t>(1),
+    std::min(idx_dist, max_idx_dist));
+
+  // Autoware does not calculate curvature directly at the first
+  // and last trajectory points. Their curvature is copied from
+  // the neighboring point.
+  if (nearest_idx == 0) {
+    return calcReferenceCurvatureStanley(
+      trajectory,
+      1,
+      traj_resample_dist,
+      curvature_calculation_distance);
+  }
+
+  if (nearest_idx >= trajectory.points.size() - 1) {
+    return calcReferenceCurvatureStanley(
+      trajectory,
+      trajectory.points.size() - 2,
+      traj_resample_dist,
+      curvature_calculation_distance);
+  }
+
+  // Keep the curvature calculation at the nearest trajectory index.
+  // Near the trajectory boundaries, reduce the index distance exactly
+  // as Autoware does in calcTrajectoryCurvatureFrom3Points().
+  const size_t i = nearest_idx;
+
+  const size_t idx_dist_prev =
+    std::min(idx_dist, i);
+
+  const size_t idx_dist_next =
+    std::min(
+      idx_dist,
+      trajectory.points.size() - 1 - i);
+
+  const auto & p0 =
+    trajectory.points.at(i - idx_dist_prev).pose.position;
+
+  const auto & p1 =
+    trajectory.points.at(i).pose.position;
+
+  const auto & p2 =
+    trajectory.points.at(i + idx_dist_next).pose.position;
+
+  return autoware_utils_geometry::calc_curvature(p0, p1, p2);
+}
 
 double calcLateralErrorStanley(
   const nav_msgs::msg::Odometry & ego_odometry,

@@ -10,6 +10,12 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
+double calcReferenceCurvatureStanley(
+  const autoware_planning_msgs::msg::Trajectory & trajectory,
+  size_t nearest_idx,
+  double traj_resample_dist,
+  double curvature_calculation_distance);
+
 double calcLateralErrorStanley(
   const nav_msgs::msg::Odometry & ego_odometry,
   const geometry_msgs::msg::Pose & nearest_pose);

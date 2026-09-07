@@ -50,8 +50,8 @@ private:
   Trajectory m_current_trajectory;
 
   // -- system --
-  double m_traj_resample_dist;
   double m_wheel_base;
+  double m_max_steer_angle;
   double m_tau_max;
   double m_d0;
 

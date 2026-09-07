@@ -42,24 +42,35 @@ struct StanleyData
 
 class Stanley
 {
+
+private:
+  double m_traj_resample_dist;
+  double m_curvature_calculation_distance;
+  double m_wheel_base;
+  double m_max_steer_angle;
+
 public:
-  explicit Stanley() = default;
+  explicit Stanley(
+    double traj_resample_dist,
+    double curvature_calculation_distance,
+    double wheel_base,
+    double max_steer_angle);
 
-ResultWithReason calculateStanley(
-  const Trajectory & reference_trajectory,
-  const Odometry & current_front_odometry,
-  const Odometry & predicted_front_odometry,
-  Lateral & ctrl_cmd,
-  double & rear_steer);
+  ResultWithReason calculateStanley(
+    const Trajectory & reference_trajectory,
+    const Odometry & current_front_odometry,
+    const Odometry & predicted_front_odometry,
+    Lateral & ctrl_cmd,
+    double & rear_steer);
 
-ResultWithReason getData(
-  const Trajectory & reference_trajectory,
-  const Odometry & current_front_odometry,
-  const Odometry & predicted_front_odometry,
-  StanleyData & data);
+  ResultWithReason getData(
+    const Trajectory & reference_trajectory,
+    const Odometry & current_front_odometry,
+    const Odometry & predicted_front_odometry,
+    StanleyData & data);
 
-double ego_nearest_dist_threshold{3.0};
-double ego_nearest_yaw_threshold{1.5707963267948966};
+  double ego_nearest_dist_threshold{3.0};
+  double ego_nearest_yaw_threshold{1.5707963267948966};
 };
 
 }  // namespace autoware::motion::control::stanley_lateral_controller
