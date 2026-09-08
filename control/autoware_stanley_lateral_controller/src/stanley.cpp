@@ -18,6 +18,8 @@
 
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
 
+#include <fmt/format.h>
+
 
 
 namespace autoware::motion::control::stanley_lateral_controller
@@ -27,11 +29,15 @@ Stanley::Stanley(
   const double traj_resample_dist,
   const double curvature_calculation_distance,
   const double wheel_base,
-  const double max_steer_angle)
+  const double max_steer_angle,
+  const std::vector<double> & k_ref_LUT,
+  const std::vector<double> & rr_LUT)
 : m_traj_resample_dist(traj_resample_dist),
   m_curvature_calculation_distance(curvature_calculation_distance),
   m_wheel_base(wheel_base),
-  m_max_steer_angle(max_steer_angle)
+  m_max_steer_angle(max_steer_angle),
+  m_k_ref_LUT(k_ref_LUT),
+  m_rr_LUT(rr_LUT)
 {
 }
 
@@ -42,9 +48,32 @@ ResultWithReason Stanley::calculateStanley(
   Lateral & ctrl_cmd,
   double & rear_steer)
 {
-  (void)reference_trajectory;
-  (void)current_front_odometry;
-  (void)predicted_front_odometry;
+  StanleyData stanley_data;
+
+  const auto data_result = getData(
+    reference_trajectory,
+    current_front_odometry,
+    predicted_front_odometry,
+    stanley_data);
+
+  if (!data_result.result) {
+    return ResultWithReason{
+      false,
+      fmt::format("getting Stanley Data ({}).", data_result.reason)};
+  }
+
+  const double vel_x =
+  predicted_front_odometry.twist.twist.linear.x;
+
+  const double lateral_error =
+    stanley_data.lateral_error;
+
+  const double reference_curvature =
+    stanley_data.reference_curvature;
+
+  (void)vel_x;
+  (void)lateral_error;
+  (void)reference_curvature;
   (void)ctrl_cmd;
   (void)rear_steer;
 

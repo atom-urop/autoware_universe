@@ -6,6 +6,9 @@
 
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
 
+const std::vector<double> test_k_ref_LUT{};
+const std::vector<double> test_rr_LUT{};
+
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
@@ -15,7 +18,9 @@ TEST(StanleyTest, GetDataPredictedLateralError)
     0.1,  // traj_resample_dist [m]
     2.0,  // curvature_calculation_distance [m]
     2.0,  // ATOM wheelbase [m]
-    0.7); // ATOM max steer angle [rad]
+    0.7,  // ATOM max steer angle [rad]
+    test_k_ref_LUT,
+    test_rr_LUT); 
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -70,7 +75,9 @@ TEST(StanleyTest, GetDataStraightTrajectory)
     0.1,  // traj_resample_dist [m]
     2.0,  // curvature_calculation_distance [m]
     2.0,  // wheelbase [m]
-    0.7); // max steer angle [rad]
+    0.7,
+    test_k_ref_LUT,
+    test_rr_LUT); 
 
   // ------------------------------------------------------------
   // Reference trajectory
@@ -165,7 +172,9 @@ TEST(StanleyTest, GetDataSelectsLargestAbsoluteCurvature)
     ds,
     curvature_calculation_distance,
     wheel_base,
-    max_steer_angle);
+    max_steer_angle,
+    test_k_ref_LUT,
+    test_rr_LUT); 
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -355,7 +364,9 @@ TEST(StanleyTest, GetDataSelectsCurrentCurvatureWhenLarger)
     ds,
     curvature_calculation_distance,
     wheel_base,
-    max_steer_angle);
+    max_steer_angle,
+    test_k_ref_LUT,
+    test_rr_LUT); 
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -545,7 +556,9 @@ TEST(StanleyTest, GetDataSaturatesCurvature)
     ds,
     curvature_calculation_distance,
     wheel_base,
-    max_steer_angle);
+    max_steer_angle,
+    test_k_ref_LUT,
+    test_rr_LUT); 
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -670,7 +683,9 @@ TEST(StanleyTest, GetDataPreservesCurvatureSignWhenSaturated)
     ds,
     curvature_calculation_distance,
     wheel_base,
-    max_steer_angle);
+    max_steer_angle,
+    test_k_ref_LUT,
+    test_rr_LUT); 
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 

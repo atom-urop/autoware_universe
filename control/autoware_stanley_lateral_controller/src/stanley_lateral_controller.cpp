@@ -39,11 +39,21 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
   m_max_steer_angle =
   node.declare_parameter<double>("max_steer_angle");
 
-  m_stanley = std::make_shared<Stanley>(
+  const auto k_ref_LUT =
+    node.declare_parameter<std::vector<double>>(
+      "k_ref_LUT", std::vector<double>{});
+
+  const auto rr_LUT =
+    node.declare_parameter<std::vector<double>>(
+      "rr_LUT", std::vector<double>{});
+
+  m_stanley = std::make_unique<Stanley>(
     traj_resample_dist,
     curvature_calculation_distance,
     m_wheel_base,
-    m_max_steer_angle);
+    m_max_steer_angle,
+    k_ref_LUT,
+    rr_LUT);
 
   m_tau_max =
     node.declare_parameter<double>("tau_max");

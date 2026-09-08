@@ -140,7 +140,7 @@ geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
     }
   }
 
-   const auto & prev_point = trajectory.points.at(prev_idx);
+  const auto & prev_point = trajectory.points.at(prev_idx);
   const auto & next_point = trajectory.points.at(next_idx);
 
   const double segment_length =

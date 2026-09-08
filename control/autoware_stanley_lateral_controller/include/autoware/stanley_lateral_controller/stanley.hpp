@@ -19,6 +19,8 @@
 #include "autoware_planning_msgs/msg/trajectory.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 
+#include <vector>
+
 #include <string>
 
 namespace autoware::motion::control::stanley_lateral_controller
@@ -48,13 +50,17 @@ private:
   double m_curvature_calculation_distance;
   double m_wheel_base;
   double m_max_steer_angle;
+  std::vector<double> m_k_ref_LUT;
+  std::vector<double> m_rr_LUT;
 
 public:
   explicit Stanley(
     double traj_resample_dist,
     double curvature_calculation_distance,
     double wheel_base,
-    double max_steer_angle);
+    double max_steer_angle,
+    const std::vector<double> & k_ref_LUT,
+    const std::vector<double> & rr_LUT);
 
   ResultWithReason calculateStanley(
     const Trajectory & reference_trajectory,
