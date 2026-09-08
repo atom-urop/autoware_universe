@@ -81,17 +81,17 @@ ResultWithReason Stanley::getData(
 
   data.lateral_error = predicted_lateral_error;
 
-  const double predicted_reference_curvature = calcReferenceCurvatureStanley(
-  reference_trajectory,
-  predicted_nearest_idx,
-  m_traj_resample_dist,
-  m_curvature_calculation_distance);
+  // Calculate the curvature vector for the entire reference trajectory.
+  const auto curvature_vector = calcCurvatureVectorStanley(
+    reference_trajectory,
+    m_traj_resample_dist,
+    m_curvature_calculation_distance);
 
-  const double current_reference_curvature = calcReferenceCurvatureStanley(
-  reference_trajectory,
-  current_nearest_idx,
-  m_traj_resample_dist,
-  m_curvature_calculation_distance);
+  const double predicted_reference_curvature =
+    curvature_vector.at(predicted_nearest_idx);
+
+  const double current_reference_curvature =
+    curvature_vector.at(current_nearest_idx);
 
   const double reference_curvature =
   std::abs(predicted_reference_curvature) >= std::abs(current_reference_curvature)

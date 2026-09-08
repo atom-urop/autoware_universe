@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include <fstream>
+#include <sstream>
+
 #include <cmath>
 
 #include <tf2/utils.h>
@@ -613,11 +616,12 @@ TEST(StanleyUtilsTest, CalcReferenceCurvature)
     trajectory.points.push_back(point);
   }
 
-  const double curvature = calcReferenceCurvatureStanley(
+  const auto curvature_vector = calcCurvatureVectorStanley(
     trajectory,
-    1,
     1.0,
     1.0);
+
+  const double curvature = curvature_vector.at(1);
 
   EXPECT_NEAR(std::abs(curvature), 1.0 / R, 1e-9);
 }
@@ -626,7 +630,7 @@ TEST(StanleyUtilsTest, CalcReferenceCurvatureSign)
 {
   autoware_planning_msgs::msg::Trajectory trajectory;
 
-  // Left turn: counter-clockwise circular arc.
+  // Right turn: clockwise circular arc.
   const double R = 5.0;
 
   for (const auto & [x, y] :
@@ -641,13 +645,298 @@ TEST(StanleyUtilsTest, CalcReferenceCurvatureSign)
     trajectory.points.push_back(point);
   }
 
-  const double curvature = calcReferenceCurvatureStanley(
+  const auto curvature_vector = calcCurvatureVectorStanley(
     trajectory,
-    1,
     1.0,
     1.0);
 
+  const double curvature = curvature_vector.at(1);
+
   EXPECT_NEAR(curvature, -1.0 / R, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureFirstPoint)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Four points on a circular arc.
+  const double R = 5.0;
+
+  for (const auto & [x, y] :
+       std::vector<std::pair<double, double>>{
+         {-R, 0.0},
+         {0.0, R},
+         {R, 0.0},
+         {2.0 * R, -R}})
+  {
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = x;
+    point.pose.position.y = y;
+    trajectory.points.push_back(point);
+  }
+
+  const auto curvature_vector = calcCurvatureVectorStanley(
+    trajectory,
+    1.0,
+    1.0);
+
+  const double curvature_first = curvature_vector.at(0);
+
+  const double curvature_second = curvature_vector.at(1);
+
+  EXPECT_NEAR(curvature_first, curvature_second, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureLastPoint)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Four points on a circular arc.
+  const double R = 5.0;
+
+  for (const auto & [x, y] :
+       std::vector<std::pair<double, double>>{
+         {-R, 0.0},
+         {0.0, R},
+         {R, 0.0},
+         {2.0 * R, -R}})
+  {
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = x;
+    point.pose.position.y = y;
+    trajectory.points.push_back(point);
+  }
+
+  const size_t last_idx = trajectory.points.size() - 1;
+
+  const auto curvature_vector = calcCurvatureVectorStanley(
+    trajectory,
+    1.0,
+    1.0);
+
+  const double curvature_last = curvature_vector.at(last_idx);
+
+  const double curvature_previous = curvature_vector.at(last_idx - 1);
+
+  EXPECT_NEAR(curvature_last, curvature_previous, 1e-9);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureIndexDistance)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Circular arc with radius 5 m.
+  const double R = 5.0;
+
+  // Points sampled every 1 m along the arc.
+  for (int i = 0; i < 7; ++i) {
+    const double theta =
+      -M_PI / 2.0 + static_cast<double>(i) * M_PI / 6.0;
+
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = R * std::cos(theta);
+    point.pose.position.y = R * std::sin(theta);
+    trajectory.points.push_back(point);
+  }
+
+  const auto curvature_vector_idx_dist_2 = calcCurvatureVectorStanley(
+    trajectory,
+    1.0,
+    2.0);
+  
+  const auto curvature_vector_idx_dist_1 = calcCurvatureVectorStanley(
+    trajectory,
+    1.0,
+    1.0);
+
+  // curvature_calculation_distance = 2 m
+  // traj_resample_dist = 1 m
+  // -> idx_dist = 2
+  const double curvature_idx_dist_2 = curvature_vector_idx_dist_2.at(3);
+
+  // curvature_calculation_distance = 1 m
+  // traj_resample_dist = 1 m
+  // -> idx_dist = 1
+  const double curvature_idx_dist_1 = curvature_vector_idx_dist_1.at(3);
+
+  // Both calculations are performed on the same circular arc,
+  // therefore the curvature should remain approximately 1/R.
+  EXPECT_NEAR(std::abs(curvature_idx_dist_2), 1.0 / R, 1e-3);
+  EXPECT_NEAR(std::abs(curvature_idx_dist_1), 1.0 / R, 1e-3);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureMaxIndexDistance)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Five points on a circular arc.
+  const double R = 5.0;
+
+  for (int i = 0; i < 5; ++i) {
+    const double theta =
+      -M_PI / 2.0 + static_cast<double>(i) * M_PI / 4.0;
+
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = R * std::cos(theta);
+    point.pose.position.y = R * std::sin(theta);
+    trajectory.points.push_back(point);
+  }
+
+  // N = 5:
+  // max_idx_dist = floor((5 - 1) / 2) = 2.
+  //
+  // Request an index distance of 10:
+  // 10 / 1 = 10 -> must be clamped to 2.
+
+  const auto curvature_vector = calcCurvatureVectorStanley(
+    trajectory,
+    1.0,
+    10.0);
+
+  const double curvature = curvature_vector.at(2);
+
+  EXPECT_NEAR(std::abs(curvature), 1.0 / R, 1e-3);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureTooFewPoints)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Two points are not enough to calculate curvature.
+  for (int i = 0; i < 2; ++i) {
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = static_cast<double>(i);
+    point.pose.position.y = 0.0;
+    trajectory.points.push_back(point);
+  }
+
+  const auto curvature_vector = calcCurvatureVectorStanley(
+    trajectory,
+    1.0,
+    1.0);
+
+  const double curvature = curvature_vector.at(0);
+
+  EXPECT_DOUBLE_EQ(curvature, 0.0);
+}
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureVariableCurvature)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  // Straight section followed by a circular arc.
+  //
+  // The first three points are collinear, so the curvature at index 1
+  // must be zero.
+  //
+  // The last three points belong to a circular arc with radius 5 m,
+  // so the curvature at index 4 must be approximately 1/R.
+  const double R = 5.0;
+
+  const std::vector<std::pair<double, double>> points{
+    {0.0, 0.0},
+    {1.0, 0.0},
+    {2.0, 0.0},
+    {3.0, 0.0},
+    {3.0 + R * std::sin(M_PI / 6.0), R * (1.0 - std::cos(M_PI / 6.0))},
+    {3.0 + R * std::sin(M_PI / 3.0), R * (1.0 - std::cos(M_PI / 3.0))},
+    {3.0 + R, R}
+  };
+
+  for (const auto & [x, y] : points) {
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = x;
+    point.pose.position.y = y;
+    trajectory.points.push_back(point);
+  }
+
+  const auto curvature_vector = calcCurvatureVectorStanley(
+    trajectory,
+    1.0,
+    1.0);
+
+  const double curvature_straight = curvature_vector.at(1);
+
+  const double curvature_curve = curvature_vector.at(5);
+
+  EXPECT_NEAR(curvature_straight, 0.0, 1e-9);
+  EXPECT_NEAR(std::abs(curvature_curve), 1.0 / R, 1e-3);
+}
+
+
+TEST(StanleyUtilsTest, CalcReferenceCurvatureRealTrajectoryDuplicates)
+{
+  autoware_planning_msgs::msg::Trajectory trajectory;
+
+  const std::string file_path =
+    "/mnt/ssd/autoware/src/universe/autoware_universe/"
+    "control/autoware_stanley_lateral_controller/test/"
+    "pointsLiveTraj_cpp.txt";
+
+  std::ifstream file(file_path);
+
+  ASSERT_TRUE(file.is_open())
+    << "Failed to open file: " << file_path;
+
+  std::string line;
+
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+
+    char c;
+    double x;
+    double y;
+
+    ss >> c >> x >> c >> y >> c;
+
+    ASSERT_FALSE(ss.fail())
+      << "Failed to parse line: " << line;
+
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = x;
+    point.pose.position.y = y;
+
+    trajectory.points.push_back(point);
+  }
+
+  file.close();
+
+  ASSERT_GE(trajectory.points.size(), 3u);
+
+  const double traj_resample_dist = 0.1;
+  const double curvature_calculation_distance = 2.0;
+
+  const auto curvature_vector = calcCurvatureVectorStanley(
+    trajectory,
+    traj_resample_dist,
+    curvature_calculation_distance);
+
+  ASSERT_EQ(
+    curvature_vector.size(),
+    trajectory.points.size());
+
+  // Export curvature results to CSV
+  std::ofstream output_file(
+    "/mnt/ssd/autoware/src/universe/autoware_universe/"
+    "control/autoware_stanley_lateral_controller/test/"
+    "curvature_cpp.csv");
+
+  ASSERT_TRUE(output_file.is_open())
+    << "Failed to open output file";
+
+  output_file << "index,x,y,curvature\n";
+
+  for (size_t i = 0; i < curvature_vector.size(); ++i) {
+    output_file
+      << i << ","
+      << trajectory.points.at(i).pose.position.x << ","
+      << trajectory.points.at(i).pose.position.y << ","
+      << curvature_vector.at(i) << "\n";
+  }
+
+  output_file.close();
+
+  SUCCEED();
 }
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

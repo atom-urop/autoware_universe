@@ -13,14 +13,15 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
-double calcReferenceCurvatureStanley(
+std::vector<double> calcCurvatureVectorStanley(
   const autoware_planning_msgs::msg::Trajectory & trajectory,
-  const size_t nearest_idx,
   const double traj_resample_dist,
   const double curvature_calculation_distance)
 {
-  if (trajectory.points.size() < 3) {
-    return 0.0;
+  const size_t n = trajectory.points.size();
+
+  if (n < 3) {
+    return std::vector<double>(n, 0.0);
   }
 
   // Calculate the index distance corresponding to the desired
@@ -34,54 +35,44 @@ double calcReferenceCurvatureStanley(
   const auto max_idx_dist =
     static_cast<size_t>(
       std::floor(
-        static_cast<double>(trajectory.points.size() - 1) / 2.0));
+        static_cast<double>(n - 1) / 2.0));
 
   idx_dist = std::max(
     static_cast<size_t>(1),
     std::min(idx_dist, max_idx_dist));
 
-  // Autoware does not calculate curvature directly at the first
-  // and last trajectory points. Their curvature is copied from
-  // the neighboring point.
-  if (nearest_idx == 0) {
-    return calcReferenceCurvatureStanley(
-      trajectory,
-      1,
-      traj_resample_dist,
-      curvature_calculation_distance);
+  std::vector<double> k_arr(n, 0.0);
+
+  // Same three-point curvature calculation used by Autoware.
+  for (size_t i = 1; i + 1 < n; ++i) {
+    const auto & p0 =
+      trajectory.points.at(
+        i - std::min(idx_dist, i)).pose.position;
+
+    const auto & p1 =
+      trajectory.points.at(i).pose.position;
+
+    const auto & p2 =
+      trajectory.points.at(
+        i + std::min(idx_dist, n - 1 - i)).pose.position;
+
+    try {
+      k_arr.at(i) =
+        autoware_utils_geometry::calc_curvature(p0, p1, p2);
+    } catch (const std::exception &) {
+      if (i > 1) {
+        k_arr.at(i) = k_arr.at(i - 1);
+      } else {
+        k_arr.at(i) = 0.0;
+      }
+    }
   }
 
-  if (nearest_idx >= trajectory.points.size() - 1) {
-    return calcReferenceCurvatureStanley(
-      trajectory,
-      trajectory.points.size() - 2,
-      traj_resample_dist,
-      curvature_calculation_distance);
-  }
+  // Same endpoint handling used by Autoware.
+  k_arr.at(0) = k_arr.at(1);
+  k_arr.back() = k_arr.at(n - 2);
 
-  // Keep the curvature calculation at the nearest trajectory index.
-  // Near the trajectory boundaries, reduce the index distance exactly
-  // as Autoware does in calcTrajectoryCurvatureFrom3Points().
-  const size_t i = nearest_idx;
-
-  const size_t idx_dist_prev =
-    std::min(idx_dist, i);
-
-  const size_t idx_dist_next =
-    std::min(
-      idx_dist,
-      trajectory.points.size() - 1 - i);
-
-  const auto & p0 =
-    trajectory.points.at(i - idx_dist_prev).pose.position;
-
-  const auto & p1 =
-    trajectory.points.at(i).pose.position;
-
-  const auto & p2 =
-    trajectory.points.at(i + idx_dist_next).pose.position;
-
-  return autoware_utils_geometry::calc_curvature(p0, p1, p2);
+  return k_arr;
 }
 
 double calcLateralErrorStanley(
