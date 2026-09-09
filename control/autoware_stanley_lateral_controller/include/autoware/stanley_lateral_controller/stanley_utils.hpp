@@ -10,6 +10,11 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
+double calculateRearSteeringRatio(
+  double reference_curvature,
+  const std::vector<double> & k_ref_LUT,
+  const std::vector<double> & rr_LUT);
+
 std::vector<double> calcCurvatureVectorStanley(
   const autoware_planning_msgs::msg::Trajectory & trajectory,
   const double traj_resample_dist,

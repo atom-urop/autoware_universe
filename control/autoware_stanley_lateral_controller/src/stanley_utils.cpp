@@ -4,6 +4,7 @@
 #include <autoware/universe_utils/geometry/geometry.hpp>
 #include <autoware_utils_geometry/geometry.hpp>
 #include "autoware_utils/math/normalization.hpp"
+#include "autoware/interpolation/linear_interpolation.hpp"
 
 #include <tf2/utils.h>
 
@@ -12,6 +13,17 @@
 
 namespace autoware::motion::control::stanley_lateral_controller
 {
+
+double calculateRearSteeringRatio(
+  const double reference_curvature,
+  const std::vector<double> & k_ref_LUT,
+  const std::vector<double> & rr_LUT)
+{
+  return autoware::interpolation::lerp(
+    k_ref_LUT,
+    rr_LUT,
+    std::abs(reference_curvature));
+}
 
 std::vector<double> calcCurvatureVectorStanley(
   const autoware_planning_msgs::msg::Trajectory & trajectory,

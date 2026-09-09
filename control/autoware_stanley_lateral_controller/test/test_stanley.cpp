@@ -4,13 +4,54 @@
 
 #include <cmath>
 
+#include "ament_index_cpp/get_package_share_directory.hpp"
+#include <yaml-cpp/yaml.h>
+
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
 
-const std::vector<double> test_k_ref_LUT{};
-const std::vector<double> test_rr_LUT{};
+
+std::pair<std::vector<double>, std::vector<double>> loadStanleyLUT()
+{
+  const auto package_path =
+    ament_index_cpp::get_package_share_directory(
+      "autoware_stanley_lateral_controller");
+
+  const auto yaml_path =
+    package_path + "/param/stanley.param.yaml";
+
+  const auto config = YAML::LoadFile(yaml_path);
+
+  const auto parameters = config["/**"]["ros__parameters"];
+
+  const auto k_ref_LUT =
+    parameters["k_ref_LUT"].as<std::vector<double>>();
+
+  const auto rr_LUT =
+    parameters["rr_LUT"].as<std::vector<double>>();
+
+  return {k_ref_LUT, rr_LUT};
+}
+
+const auto [test_k_ref_LUT, test_rr_LUT] = loadStanleyLUT();
 
 namespace autoware::motion::control::stanley_lateral_controller
 {
+
+TEST(StanleyTest, LoadStanleyLUT)
+{
+  const auto [k_ref_LUT, rr_LUT] = loadStanleyLUT();
+
+  ASSERT_FALSE(k_ref_LUT.empty());
+  ASSERT_FALSE(rr_LUT.empty());
+
+  ASSERT_EQ(k_ref_LUT.size(), rr_LUT.size());
+
+  EXPECT_NEAR(k_ref_LUT.front(), 0.0, 1e-12);
+  EXPECT_NEAR(k_ref_LUT.back(), 0.644217687237691, 1e-12);
+
+  EXPECT_NEAR(rr_LUT.front(), 0.0, 1e-12);
+  EXPECT_NEAR(rr_LUT.back(), -1.0, 1e-12);
+}
 
 TEST(StanleyTest, GetDataPredictedLateralError)
 {

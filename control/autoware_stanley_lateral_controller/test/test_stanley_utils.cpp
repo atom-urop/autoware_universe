@@ -1,17 +1,36 @@
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
-
 #include <gtest/gtest.h>
-
 #include <fstream>
 #include <sstream>
-
 #include <cmath>
-
 #include <tf2/utils.h>
-
 #include <utility>
-
 #include <vector>
+#include "ament_index_cpp/get_package_share_directory.hpp"
+#include <yaml-cpp/yaml.h>
+#include <iostream>
+
+std::pair<std::vector<double>, std::vector<double>> loadStanleyLUT()
+{
+  const auto package_path =
+    ament_index_cpp::get_package_share_directory(
+      "autoware_stanley_lateral_controller");
+
+  const auto yaml_path =
+    package_path + "/param/stanley.param.yaml";
+
+  const auto config = YAML::LoadFile(yaml_path);
+
+  const auto parameters = config["/**"]["ros__parameters"];
+
+  const auto k_ref_LUT =
+    parameters["k_ref_LUT"].as<std::vector<double>>();
+
+  const auto rr_LUT =
+    parameters["rr_LUT"].as<std::vector<double>>();
+
+  return {k_ref_LUT, rr_LUT};
+}
 
 namespace autoware::motion::control::stanley_lateral_controller
 {
@@ -937,6 +956,82 @@ TEST(StanleyUtilsTest, CalcReferenceCurvatureRealTrajectoryDuplicates)
   output_file.close();
 
   SUCCEED();
+}
+
+TEST(StanleyUtilsTest, CalculateRearSteeringRatioFromLUT)
+{
+  const auto [k_ref_LUT, rr_LUT] = loadStanleyLUT();
+
+  ASSERT_FALSE(k_ref_LUT.empty());
+  ASSERT_EQ(k_ref_LUT.size(), rr_LUT.size());
+
+  const size_t test_index = 100;
+
+  const double reference_curvature =
+    k_ref_LUT.at(test_index);
+
+  const double rr =
+    calculateRearSteeringRatio(
+      reference_curvature,
+      k_ref_LUT,
+      rr_LUT);
+
+  std::cout << std::endl;
+  std::cout
+    << "reference_curvature = "
+    << reference_curvature
+    << ", rr = "
+    << rr
+    << std::endl;
+
+  EXPECT_NEAR(
+    rr,
+    rr_LUT.at(test_index),
+    1e-12);
+}
+
+TEST(StanleyUtilsTest, CalculateRearSteeringRatioInterpolation)
+{
+  const auto [k_ref_LUT, rr_LUT] = loadStanleyLUT();
+
+  ASSERT_FALSE(k_ref_LUT.empty());
+  ASSERT_EQ(k_ref_LUT.size(), rr_LUT.size());
+
+  const size_t index = 100;
+
+  const double k1 = k_ref_LUT.at(index);
+  const double k2 = k_ref_LUT.at(index + 1);
+
+  const double rr1 = rr_LUT.at(index);
+  const double rr2 = rr_LUT.at(index + 1);
+
+  // Midpoint between two consecutive LUT points.
+  const double k_test = 0.5 * (k1 + k2);
+
+  // Expected linear interpolation.
+  const double rr_expected = 0.5 * (rr1 + rr2);
+
+  const double rr =
+    calculateRearSteeringRatio(
+      k_test,
+      k_ref_LUT,
+      rr_LUT);
+
+  std::cout << std::endl;
+  std::cout
+    << "Interpolation test" << std::endl
+    << "k1          = " << k1 << std::endl
+    << "k2          = " << k2 << std::endl
+    << "rr1         = " << rr1 << std::endl
+    << "rr2         = " << rr2 << std::endl
+    << "k_test      = " << k_test << std::endl
+    << "rr_expected = " << rr_expected << std::endl
+    << "rr_output   = " << rr << std::endl;
+
+  EXPECT_NEAR(
+    rr,
+    rr_expected,
+    1e-12);
 }
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

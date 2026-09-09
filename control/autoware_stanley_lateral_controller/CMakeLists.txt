@@ -19,6 +19,8 @@ ament_auto_package(
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_index_cpp REQUIRED)
+  find_package(yaml_cpp_vendor REQUIRED)
 
   ament_add_gtest(test_stanley_utils
     test/test_stanley_utils.cpp
@@ -26,6 +28,12 @@ if(BUILD_TESTING)
 
   target_link_libraries(test_stanley_utils
     ${STANLEY_LAT_CON_LIB}
+    yaml-cpp
+  )
+
+  ament_target_dependencies(test_stanley_utils
+    ament_index_cpp
+    yaml_cpp_vendor
   )
 
   ament_add_gtest(test_stanley
@@ -34,5 +42,11 @@ if(BUILD_TESTING)
 
   target_link_libraries(test_stanley
     ${STANLEY_LAT_CON_LIB}
+    yaml-cpp
+  )
+
+  ament_target_dependencies(test_stanley
+    ament_index_cpp
+    yaml_cpp_vendor
   )
 endif()

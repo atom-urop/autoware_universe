@@ -40,6 +40,7 @@ struct StanleyData
 {
   double lateral_error;
   double reference_curvature;
+  double longitudinal_velocity;
 };
 
 class Stanley
@@ -74,6 +75,11 @@ public:
     const Odometry & current_front_odometry,
     const Odometry & predicted_front_odometry,
     StanleyData & data);
+  
+  ResultWithReason calculateControl(
+    const StanleyData & stanley_data,
+    Lateral & ctrl_cmd,
+    double & rear_steer);
 
   double ego_nearest_dist_threshold{3.0};
   double ego_nearest_yaw_threshold{1.5707963267948966};

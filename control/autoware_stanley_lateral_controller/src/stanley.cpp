@@ -21,7 +21,6 @@
 #include <fmt/format.h>
 
 
-
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
@@ -62,22 +61,11 @@ ResultWithReason Stanley::calculateStanley(
       fmt::format("getting Stanley Data ({}).", data_result.reason)};
   }
 
-  const double vel_x =
-  predicted_front_odometry.twist.twist.linear.x;
+  return calculateControl(
+    stanley_data,
+    ctrl_cmd,
+    rear_steer);
 
-  const double lateral_error =
-    stanley_data.lateral_error;
-
-  const double reference_curvature =
-    stanley_data.reference_curvature;
-
-  (void)vel_x;
-  (void)lateral_error;
-  (void)reference_curvature;
-  (void)ctrl_cmd;
-  (void)rear_steer;
-
-  return ResultWithReason{true};
 }
 
 ResultWithReason Stanley::getData(
@@ -136,9 +124,38 @@ ResultWithReason Stanley::getData(
       std::min(std::abs(reference_curvature), curvature_max),
       reference_curvature);
 
+  data.longitudinal_velocity = 
+    predicted_front_odometry.twist.twist.linear.x;
+
   (void)current_nearest_pose;
 
-  
+  return ResultWithReason{true};
+}
+
+ResultWithReason Stanley::calculateControl(
+  const StanleyData & stanley_data,
+  Lateral & ctrl_cmd,
+  double & rear_steer)
+{
+  const double longitudinal_velocity =
+    stanley_data.longitudinal_velocity;
+
+  const double lateral_error =
+    stanley_data.lateral_error;
+
+  const double reference_curvature =
+    stanley_data.reference_curvature;
+
+  const double rr = calculateRearSteeringRatio(
+    reference_curvature,
+    m_k_ref_LUT,
+    m_rr_LUT);
+
+    (void)rr;
+    (void)longitudinal_velocity;
+    (void)lateral_error;
+    (void)ctrl_cmd;
+    (void)rear_steer;
 
   return ResultWithReason{true};
 }
