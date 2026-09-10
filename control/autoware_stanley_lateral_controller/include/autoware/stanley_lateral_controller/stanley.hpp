@@ -51,8 +51,13 @@ private:
   double m_curvature_calculation_distance;
   double m_wheel_base;
   double m_max_steer_angle;
+  double m_k_gain1;
+  double m_k_soft;
+  double m_k_gain2;
   std::vector<double> m_k_ref_LUT;
   std::vector<double> m_rr_LUT;
+  std::vector<double> m_kappa_gain_LUT;
+  std::vector<double> m_gain_4WS_LUT;
 
 public:
   explicit Stanley(
@@ -60,8 +65,13 @@ public:
     double curvature_calculation_distance,
     double wheel_base,
     double max_steer_angle,
+    double k_gain1,
+    double k_soft,
+    double k_gain2,
     const std::vector<double> & k_ref_LUT,
-    const std::vector<double> & rr_LUT);
+    const std::vector<double> & rr_LUT,
+    const std::vector<double> & kappa_gain_LUT,
+    const std::vector<double> & gain_4WS_LUT);
 
   ResultWithReason calculateStanley(
     const Trajectory & reference_trajectory,

@@ -14,6 +14,17 @@
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
+double calculate4WSGain(
+  const double reference_curvature,
+  const std::vector<double> & kappa_gain_LUT,
+  const std::vector<double> & gain_4WS_LUT)
+{
+  return autoware::interpolation::lerp(
+    kappa_gain_LUT,
+    gain_4WS_LUT,
+    std::abs(reference_curvature));
+}
+
 double calculateRearSteeringRatio(
   const double reference_curvature,
   const std::vector<double> & k_ref_LUT,

@@ -34,10 +34,10 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
     node.declare_parameter<double>("curvature_calculation_distance");
 
   m_wheel_base =
-    node.declare_parameter<double>("wheel_base");
+    node.declare_parameter<double>("wheel_base", 2);
 
   m_max_steer_angle =
-  node.declare_parameter<double>("max_steer_angle");
+  node.declare_parameter<double>("max_steer_angle", 0.7);
 
   const auto k_ref_LUT =
     node.declare_parameter<std::vector<double>>(
@@ -46,14 +46,36 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
   const auto rr_LUT =
     node.declare_parameter<std::vector<double>>(
       "rr_LUT", std::vector<double>{});
+  
+  const auto kappa_gain_LUT =
+    node.declare_parameter<std::vector<double>>(
+      "kappa_gain_LUT", std::vector<double>{});
+
+  const auto gain_4WS_LUT =
+    node.declare_parameter<std::vector<double>>(
+      "gain_4WS_LUT", std::vector<double>{});
+
+  const auto k_gain1 =
+    node.declare_parameter<double>("k_gain1", 0.8);
+
+  const auto k_soft =
+    node.declare_parameter<double>("k_soft", 1.5);
+
+  const auto k_gain2 =
+    node.declare_parameter<double>("k_gain2", 15.0);
 
   m_stanley = std::make_unique<Stanley>(
     traj_resample_dist,
     curvature_calculation_distance,
     m_wheel_base,
     m_max_steer_angle,
+    k_gain1,
+    k_soft,
+    k_gain2,
     k_ref_LUT,
-    rr_LUT);
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
 
   m_tau_max =
     node.declare_parameter<double>("tau_max");
@@ -88,15 +110,7 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 
   m_steering_offset_limit =
     node.declare_parameter<double>("steering_offset_limit");
-
-  m_k_gain1 =
-    node.declare_parameter<double>("k_gain1");
-
-  m_k_soft =
-    node.declare_parameter<double>("k_soft");
-
-  m_k_gain2 =
-    node.declare_parameter<double>("k_gain2");
+    
 }
 
 void StanleyLateralController::setTrajectory(const Trajectory & msg)

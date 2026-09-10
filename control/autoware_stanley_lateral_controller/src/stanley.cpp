@@ -29,14 +29,24 @@ Stanley::Stanley(
   const double curvature_calculation_distance,
   const double wheel_base,
   const double max_steer_angle,
+  const double k_gain1,
+  const double k_soft,
+  const double k_gain2,
   const std::vector<double> & k_ref_LUT,
-  const std::vector<double> & rr_LUT)
+  const std::vector<double> & rr_LUT,
+  const std::vector<double> & kappa_gain_LUT,
+  const std::vector<double> & gain_4WS_LUT)
 : m_traj_resample_dist(traj_resample_dist),
   m_curvature_calculation_distance(curvature_calculation_distance),
   m_wheel_base(wheel_base),
   m_max_steer_angle(max_steer_angle),
+  m_k_gain1(k_gain1),
+  m_k_soft(k_soft),
+  m_k_gain2(k_gain2),
   m_k_ref_LUT(k_ref_LUT),
-  m_rr_LUT(rr_LUT)
+  m_rr_LUT(rr_LUT),
+  m_kappa_gain_LUT(kappa_gain_LUT),
+  m_gain_4WS_LUT(gain_4WS_LUT)
 {
 }
 
@@ -137,27 +147,66 @@ ResultWithReason Stanley::calculateControl(
   Lateral & ctrl_cmd,
   double & rear_steer)
 {
-  const double longitudinal_velocity =
-    stanley_data.longitudinal_velocity;
-
-  const double lateral_error =
-    stanley_data.lateral_error;
-
-  const double reference_curvature =
-    stanley_data.reference_curvature;
+  // ============================================================
+  // 1. 4WS parameters from LUTs
+  // ============================================================
 
   const double rr = calculateRearSteeringRatio(
-    reference_curvature,
+    stanley_data.reference_curvature,
     m_k_ref_LUT,
     m_rr_LUT);
 
-    (void)rr;
-    (void)longitudinal_velocity;
-    (void)lateral_error;
-    (void)ctrl_cmd;
-    (void)rear_steer;
+  const double gain_4WS = calculate4WSGain(
+    stanley_data.reference_curvature,
+    m_kappa_gain_LUT,
+    m_gain_4WS_LUT);
 
-  return ResultWithReason{true};
+  // ============================================================
+  // 2. Stanley cross-track correction
+  // ============================================================
+
+  const double cross_track_term = std::atan2(
+    m_k_gain1 * stanley_data.lateral_error,
+    stanley_data.longitudinal_velocity + m_k_soft);
+
+  // ============================================================
+  // 3. Equivalent 2WS front steering
+  // ============================================================
+
+  double front_steer =
+    m_k_gain2 * cross_track_term;
+
+  // ============================================================
+  // 4. Saturate equivalent 2WS steering
+  // ============================================================
+
+  front_steer = std::clamp(
+    front_steer,
+    -m_max_steer_angle,
+    m_max_steer_angle);
+
+  // ============================================================
+  // 5. Apply 4WS gain
+  // ============================================================
+
+  front_steer =
+    gain_4WS * front_steer;
+
+  // ============================================================
+  // 6. Rear steering
+  // ============================================================
+
+  rear_steer =
+    rr * front_steer;
+
+  // ============================================================
+  // 7. Front steering output
+  // ============================================================
+
+  ctrl_cmd.steering_tire_angle =
+    front_steer;
+
+  return ResultWithReason{true, ""};
 }
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

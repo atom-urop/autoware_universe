@@ -32,6 +32,28 @@ std::pair<std::vector<double>, std::vector<double>> loadStanleyLUT()
   return {k_ref_LUT, rr_LUT};
 }
 
+std::pair<std::vector<double>, std::vector<double>> loadStanleyGainLUT()
+{
+  const auto package_path =
+    ament_index_cpp::get_package_share_directory(
+      "autoware_stanley_lateral_controller");
+
+  const auto yaml_path =
+    package_path + "/param/stanley.param.yaml";
+
+  const auto config = YAML::LoadFile(yaml_path);
+
+  const auto parameters = config["/**"]["ros__parameters"];
+
+  const auto kappa_gain_LUT =
+    parameters["kappa_gain_LUT"].as<std::vector<double>>();
+
+  const auto gain_4WS_LUT =
+    parameters["gain_4WS_LUT"].as<std::vector<double>>();
+
+  return {kappa_gain_LUT, gain_4WS_LUT};
+}
+
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
@@ -1031,6 +1053,85 @@ TEST(StanleyUtilsTest, CalculateRearSteeringRatioInterpolation)
   EXPECT_NEAR(
     rr,
     rr_expected,
+    1e-12);
+}
+
+TEST(StanleyUtilsTest, Calculate4WSGainFromLUT)
+{
+  const auto [kappa_gain_LUT, gain_4WS_LUT] =
+    loadStanleyGainLUT();
+
+  ASSERT_FALSE(kappa_gain_LUT.empty());
+  ASSERT_EQ(kappa_gain_LUT.size(), gain_4WS_LUT.size());
+
+  const size_t test_index = 100;
+
+  const double reference_curvature =
+    kappa_gain_LUT.at(test_index);
+
+  const double gain_4WS =
+    calculate4WSGain(
+      reference_curvature,
+      kappa_gain_LUT,
+      gain_4WS_LUT);
+
+  std::cout << std::endl;
+  std::cout
+    << "reference_curvature = "
+    << reference_curvature
+    << ", gain_4WS = "
+    << gain_4WS
+    << std::endl;
+
+  EXPECT_NEAR(
+    gain_4WS,
+    gain_4WS_LUT.at(test_index),
+    1e-12);
+}
+
+TEST(StanleyUtilsTest, Calculate4WSGainInterpolation)
+{
+  const auto [kappa_gain_LUT, gain_4WS_LUT] =
+    loadStanleyGainLUT();
+
+  ASSERT_FALSE(kappa_gain_LUT.empty());
+  ASSERT_EQ(kappa_gain_LUT.size(), gain_4WS_LUT.size());
+
+  const size_t index = 100;
+
+  const double k1 = kappa_gain_LUT.at(index);
+  const double k2 = kappa_gain_LUT.at(index + 1);
+
+  const double gain1 = gain_4WS_LUT.at(index);
+  const double gain2 = gain_4WS_LUT.at(index + 1);
+
+  // Query exactly halfway between two LUT points.
+  const double k_test = 0.5 * (k1 + k2);
+
+  // Expected value from linear interpolation.
+  const double gain_expected =
+    0.5 * (gain1 + gain2);
+
+  const double gain_4WS =
+    calculate4WSGain(
+      k_test,
+      kappa_gain_LUT,
+      gain_4WS_LUT);
+
+  std::cout << std::endl;
+  std::cout
+    << "4WS gain interpolation test" << std::endl
+    << "k1            = " << k1 << std::endl
+    << "k2            = " << k2 << std::endl
+    << "gain1         = " << gain1 << std::endl
+    << "gain2         = " << gain2 << std::endl
+    << "k_test        = " << k_test << std::endl
+    << "gain_expected = " << gain_expected << std::endl
+    << "gain_output   = " << gain_4WS << std::endl;
+
+  EXPECT_NEAR(
+    gain_4WS,
+    gain_expected,
     1e-12);
 }
 

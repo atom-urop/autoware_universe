@@ -3,14 +3,24 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <algorithm>
+#include <iterator>
 
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include <yaml-cpp/yaml.h>
 
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
 
+#include <tuple>
 
-std::pair<std::vector<double>, std::vector<double>> loadStanleyLUT()
+
+std::tuple<
+  std::vector<double>,
+  std::vector<double>,
+  std::vector<double>,
+  std::vector<double>>
+
+loadStanleyLUT()
 {
   const auto package_path =
     ament_index_cpp::get_package_share_directory(
@@ -29,28 +39,49 @@ std::pair<std::vector<double>, std::vector<double>> loadStanleyLUT()
   const auto rr_LUT =
     parameters["rr_LUT"].as<std::vector<double>>();
 
-  return {k_ref_LUT, rr_LUT};
-}
+  const auto kappa_gain_LUT =
+    parameters["kappa_gain_LUT"].as<std::vector<double>>();
 
-const auto [test_k_ref_LUT, test_rr_LUT] = loadStanleyLUT();
+  const auto gain_4WS_LUT =
+    parameters["gain_4WS_LUT"].as<std::vector<double>>();
+
+  return {
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT};
+}
 
 namespace autoware::motion::control::stanley_lateral_controller
 {
 
 TEST(StanleyTest, LoadStanleyLUT)
 {
-  const auto [k_ref_LUT, rr_LUT] = loadStanleyLUT();
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
 
   ASSERT_FALSE(k_ref_LUT.empty());
   ASSERT_FALSE(rr_LUT.empty());
+  ASSERT_FALSE(kappa_gain_LUT.empty());
+  ASSERT_FALSE(gain_4WS_LUT.empty());
 
   ASSERT_EQ(k_ref_LUT.size(), rr_LUT.size());
+  ASSERT_EQ(kappa_gain_LUT.size(), gain_4WS_LUT.size());
 
   EXPECT_NEAR(k_ref_LUT.front(), 0.0, 1e-12);
   EXPECT_NEAR(k_ref_LUT.back(), 0.644217687237691, 1e-12);
 
   EXPECT_NEAR(rr_LUT.front(), 0.0, 1e-12);
   EXPECT_NEAR(rr_LUT.back(), -1.0, 1e-12);
+
+  EXPECT_NEAR(kappa_gain_LUT.front(), 0.0, 1e-12);
+  EXPECT_NEAR(kappa_gain_LUT.back(),  0.644217687237691, 1e-12);
+  
+  EXPECT_NEAR(gain_4WS_LUT.front(), 1.0, 1e-12);
+  EXPECT_NEAR(gain_4WS_LUT.back(), 1, 1e-12);
 }
 
 TEST(StanleyTest, GetDataPredictedLateralError)
@@ -60,8 +91,14 @@ TEST(StanleyTest, GetDataPredictedLateralError)
     2.0,  // curvature_calculation_distance [m]
     2.0,  // ATOM wheelbase [m]
     0.7,  // ATOM max steer angle [rad]
-    test_k_ref_LUT,
-    test_rr_LUT); 
+    0.8,   // k_gain1
+    1.5,   // k_soft
+    15.0,  // k_gain2
+    {},
+    {},
+    {},
+    {}); 
+ 
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -117,8 +154,14 @@ TEST(StanleyTest, GetDataStraightTrajectory)
     2.0,  // curvature_calculation_distance [m]
     2.0,  // wheelbase [m]
     0.7,
-    test_k_ref_LUT,
-    test_rr_LUT); 
+    0.8,   // k_gain1
+    1.5,   // k_soft
+    15.0,  // k_gain2
+    {},
+    {},
+    {},
+    {}); 
+
 
   // ------------------------------------------------------------
   // Reference trajectory
@@ -214,8 +257,14 @@ TEST(StanleyTest, GetDataSelectsLargestAbsoluteCurvature)
     curvature_calculation_distance,
     wheel_base,
     max_steer_angle,
-    test_k_ref_LUT,
-    test_rr_LUT); 
+    0.8,   // k_gain1
+    1.5,   // k_soft
+    15.0,  // k_gain2
+    {},
+    {},
+    {},
+    {}); 
+
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -406,8 +455,14 @@ TEST(StanleyTest, GetDataSelectsCurrentCurvatureWhenLarger)
     curvature_calculation_distance,
     wheel_base,
     max_steer_angle,
-    test_k_ref_LUT,
-    test_rr_LUT); 
+    0.8,   // k_gain1
+    1.5,   // k_soft
+    15.0,  // k_gain2
+    {},
+    {},
+    {},
+    {}); 
+
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -598,8 +653,14 @@ TEST(StanleyTest, GetDataSaturatesCurvature)
     curvature_calculation_distance,
     wheel_base,
     max_steer_angle,
-    test_k_ref_LUT,
-    test_rr_LUT); 
+    0.8,   // k_gain1
+    1.5,   // k_soft
+    15.0,  // k_gain2
+    {},
+    {},
+    {},
+    {}); 
+
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -725,8 +786,13 @@ TEST(StanleyTest, GetDataPreservesCurvatureSignWhenSaturated)
     curvature_calculation_distance,
     wheel_base,
     max_steer_angle,
-    test_k_ref_LUT,
-    test_rr_LUT); 
+    0.8,   // k_gain1
+    1.5,   // k_soft
+    15.0,  // k_gain2
+    {},
+    {},
+    {},
+    {}); 
 
   autoware_planning_msgs::msg::Trajectory trajectory;
 
@@ -867,6 +933,609 @@ TEST(StanleyTest, GetDataPreservesCurvatureSignWhenSaturated)
     data.lateral_error,
     0.0,
     1e-9);
+}
+
+TEST(StanleyTest, CalculateControlZeroLateralError)
+{
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
+
+  Stanley stanley(
+    0.1,  // traj_resample_dist [m]
+    2.0,  // curvature_calculation_distance [m]
+    2.0,  // wheelbase [m]
+    0.7,  // max steer angle [rad]
+    0.8,  // k_gain1
+    1.5,  // k_soft
+    15.0, // k_gain2
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
+
+  StanleyData data;
+
+  data.lateral_error = 0.0;
+  data.reference_curvature = 0.0;
+  data.longitudinal_velocity = 5.0;
+
+  Lateral ctrl_cmd;
+  double rear_steer = 0.0;
+
+  const auto result =
+    stanley.calculateControl(
+      data,
+      ctrl_cmd,
+      rear_steer);
+
+  ASSERT_TRUE(result.result);
+
+  EXPECT_NEAR(
+    ctrl_cmd.steering_tire_angle,
+    0.0,
+    1e-9);
+
+  EXPECT_NEAR(
+    rear_steer,
+    0.0,
+    1e-9);
+}
+
+TEST(StanleyTest, CalculateControlPositiveLateralError)
+{
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
+
+  Stanley stanley(
+    0.1,  // traj_resample_dist [m]
+    2.0,  // curvature_calculation_distance [m]
+    2.0,  // wheelbase [m]
+    0.7,  // max steer angle [rad]
+    0.8,  // k_gain1
+    1.5,  // k_soft
+    15.0, // k_gain2
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
+
+  StanleyData data;
+
+  data.lateral_error = 0.1;
+  data.reference_curvature = 0.0;
+  data.longitudinal_velocity = 5.0;
+
+  Lateral ctrl_cmd;
+  double rear_steer = 0.0;
+
+  const auto result =
+    stanley.calculateControl(
+      data,
+      ctrl_cmd,
+      rear_steer);
+
+  ASSERT_TRUE(result.result);
+
+  const double expected_cross_track_term =
+    std::atan2(
+      0.8 * 0.1,
+      5.0 + 1.5);
+
+  const double expected_front_steer =
+    15.0 * expected_cross_track_term;
+
+  EXPECT_NEAR(
+    ctrl_cmd.steering_tire_angle,
+    expected_front_steer,
+    1e-7);
+
+  EXPECT_NEAR(
+    rear_steer,
+    0.0,
+    1e-9);
+
+  std::cout
+   << "front_steer = " << ctrl_cmd.steering_tire_angle
+   << ", rear steer = " << rear_steer
+   << std::endl;
+}
+
+TEST(StanleyTest, CalculateControlNegativeLateralError)
+{
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
+
+  Stanley stanley(
+    0.1,  // traj_resample_dist [m]
+    2.0,  // curvature_calculation_distance [m]
+    2.0,  // wheelbase [m]
+    0.7,  // max steer angle [rad]
+    0.8,  // k_gain1
+    1.5,  // k_soft
+    15.0, // k_gain2
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
+
+  StanleyData data;
+
+  data.lateral_error = -0.1;
+  data.reference_curvature = 0.0;
+  data.longitudinal_velocity = 5.0;
+
+  Lateral ctrl_cmd;
+  double rear_steer = 0.0;
+
+  const auto result =
+    stanley.calculateControl(
+      data,
+      ctrl_cmd,
+      rear_steer);
+
+  ASSERT_TRUE(result.result);
+
+  const double expected_cross_track_term =
+    std::atan2(
+      0.8 * (-0.1),
+      5.0 + 1.5);
+
+  const double expected_front_steer =
+    15.0 * expected_cross_track_term;
+
+  EXPECT_NEAR(
+    ctrl_cmd.steering_tire_angle,
+    expected_front_steer,
+    1e-7);
+
+  EXPECT_NEAR(
+    rear_steer,
+    0.0,
+    1e-9);
+
+  EXPECT_LT(
+    ctrl_cmd.steering_tire_angle,
+    0.0);
+
+  std::cout
+   << "front_steer = " << ctrl_cmd.steering_tire_angle
+   << ", rear steer = " << rear_steer
+   << std::endl;
+}
+
+TEST(StanleyTest, CalculateControlWithCurvature)
+{
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
+
+  ASSERT_FALSE(k_ref_LUT.empty());
+  ASSERT_FALSE(rr_LUT.empty());
+  ASSERT_FALSE(kappa_gain_LUT.empty());
+  ASSERT_FALSE(gain_4WS_LUT.empty());
+
+  ASSERT_EQ(k_ref_LUT.size(), rr_LUT.size());
+  ASSERT_EQ(kappa_gain_LUT.size(), gain_4WS_LUT.size());
+
+  // Use a LUT point directly, so no interpolation is involved.
+  constexpr std::size_t lut_index = 386;
+
+  const double reference_curvature =
+    k_ref_LUT[lut_index];
+
+  const double expected_rr =
+    rr_LUT[lut_index];
+
+  // ------------------------------------------------------------
+  // Find the corresponding gain LUT point.
+  //
+  // kappa_gain_LUT and gain_4WS_LUT have their own resolution,
+  // so use the LUT value directly at the closest curvature.
+  // ------------------------------------------------------------
+
+  const auto gain_it =
+    std::lower_bound(
+      kappa_gain_LUT.begin(),
+      kappa_gain_LUT.end(),
+      std::abs(reference_curvature));
+
+  std::size_t gain_index;
+
+  if (gain_it == kappa_gain_LUT.end()) {
+    gain_index = kappa_gain_LUT.size() - 1;
+  } else {
+    gain_index =
+      static_cast<std::size_t>(
+        std::distance(kappa_gain_LUT.begin(), gain_it));
+  }
+
+  const double expected_gain_4WS =
+    gain_4WS_LUT[gain_index];
+  
+  const double gain_4WS =
+    calculate4WSGain(
+      reference_curvature,
+      kappa_gain_LUT,
+      gain_4WS_LUT);
+
+  Stanley stanley(
+    0.1,  // traj_resample_dist [m]
+    2.0,  // curvature_calculation_distance [m]
+    2.0,  // wheelbase [m]
+    0.7,  // max steer angle [rad]
+    0.8,  // k_gain1
+    1.5,  // k_soft
+    15.0, // k_gain2
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
+
+  StanleyData data;
+
+  data.lateral_error = 0.1;
+  data.reference_curvature = reference_curvature;
+  data.longitudinal_velocity = 5.0;
+
+  Lateral ctrl_cmd;
+  double rear_steer = 0.0;
+
+  const auto result =
+    stanley.calculateControl(
+      data,
+      ctrl_cmd,
+      rear_steer);
+
+  ASSERT_TRUE(result.result);
+
+  // ------------------------------------------------------------
+  // Expected Stanley 2WS steering
+  // ------------------------------------------------------------
+
+  const double cross_track_term =
+    std::atan2(
+      0.8 * 0.1,
+      5.0 + 1.5);
+
+  const double front_steer_2WS =
+    15.0 * cross_track_term;
+
+  const double front_steer_2WS_sat =
+    std::clamp(
+      front_steer_2WS,
+      -0.7,
+      0.7);
+
+  // ------------------------------------------------------------
+  // Expected 4WS steering
+  // ------------------------------------------------------------
+
+  const double expected_front_steer =
+    expected_gain_4WS * front_steer_2WS_sat;
+
+  const double expected_rear_steer =
+    expected_rr * expected_front_steer;
+
+  EXPECT_NEAR(
+    ctrl_cmd.steering_tire_angle,
+    expected_front_steer,
+    1e-4);
+
+  EXPECT_NEAR(
+    rear_steer,
+    expected_rear_steer,
+    1e-4);
+
+  std::cout
+   << "reference curvature = " << reference_curvature
+   << ", front_steer = " << ctrl_cmd.steering_tire_angle
+   << ", rear steer = " << rear_steer
+   << ", expected gain 4WS = " << gain_4WS
+   << std::endl;
+}
+
+TEST(StanleyTest, CalculateControlSaturatesBefore4WSGain)
+{
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
+
+  ASSERT_FALSE(k_ref_LUT.empty());
+  ASSERT_FALSE(rr_LUT.empty());
+  ASSERT_FALSE(kappa_gain_LUT.empty());
+  ASSERT_FALSE(gain_4WS_LUT.empty());
+
+  // Choose a curvature corresponding to a LUT point.
+  constexpr std::size_t lut_index = 386;
+
+  const double reference_curvature =
+    k_ref_LUT[lut_index];
+
+  Stanley stanley(
+    0.1,  // traj_resample_dist [m]
+    2.0,  // curvature_calculation_distance [m]
+    2.0,  // wheelbase [m]
+    0.7,  // max steer angle [rad]
+    0.8,  // k_gain1
+    1.5,  // k_soft
+    15.0, // k_gain2
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
+
+  StanleyData data;
+
+  // Deliberately large lateral error to force 2WS saturation.
+  data.lateral_error = 1.0;
+  data.reference_curvature = reference_curvature;
+  data.longitudinal_velocity = 0.0;
+
+  Lateral ctrl_cmd;
+  double rear_steer = 0.0;
+
+  const auto result =
+    stanley.calculateControl(
+      data,
+      ctrl_cmd,
+      rear_steer);
+
+  ASSERT_TRUE(result.result);
+
+  // ------------------------------------------------------------
+  // Expected 2WS Stanley steering
+  // ------------------------------------------------------------
+
+  const double cross_track_term =
+    std::atan2(
+      0.8 * 1.0,
+      0.0 + 1.5);
+
+  const double front_steer_2WS =
+    15.0 * cross_track_term;
+
+  // Verify that this test actually reaches saturation.
+  EXPECT_GT(
+    front_steer_2WS,
+    0.7);
+
+  const double front_steer_2WS_sat = 0.7;
+
+  // ------------------------------------------------------------
+  // Expected 4WS gain
+  // ------------------------------------------------------------
+
+  const double gain_4WS =
+    calculate4WSGain(
+      reference_curvature,
+      kappa_gain_LUT,
+      gain_4WS_LUT);
+
+  // ------------------------------------------------------------
+  // Expected final front steering
+  // ------------------------------------------------------------
+
+  const double expected_front_steer =
+    gain_4WS * front_steer_2WS_sat;
+
+  EXPECT_NEAR(
+    ctrl_cmd.steering_tire_angle,
+    expected_front_steer,
+    1e-4);
+
+  // ------------------------------------------------------------
+  // Rear steering
+  // ------------------------------------------------------------
+
+  const double rr =
+    calculateRearSteeringRatio(
+      reference_curvature,
+      k_ref_LUT,
+      rr_LUT);
+
+  const double expected_rear_steer =
+    rr * expected_front_steer;
+
+  EXPECT_NEAR(
+    rear_steer,
+    expected_rear_steer,
+    1e-4);
+
+  // The final front steering must still respect the steering limit.
+  EXPECT_LE(
+    std::abs(ctrl_cmd.steering_tire_angle),
+    0.7 + 1e-12);
+  
+  std::cout
+   << "reference curvature = " << reference_curvature
+   << ", front_steer = " << ctrl_cmd.steering_tire_angle
+   << ", rear steer = " << rear_steer
+   << ", expected gain 4WS = " << gain_4WS
+   << std::endl;
+}
+
+TEST(StanleyTest, CalculateControlNegativeReferenceCurvature)
+{
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
+
+  Stanley stanley(
+    0.1,
+    2.0,
+    2.0,
+    0.7,
+    0.8,
+    1.5,
+    15.0,
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
+
+  StanleyData data;
+
+  data.lateral_error = -0.1;
+  data.reference_curvature = -k_ref_LUT[386];
+  data.longitudinal_velocity = 5.0;
+
+  Lateral ctrl_cmd;
+  double rear_steer = 0.0;
+
+  const auto result =
+    stanley.calculateControl(
+      data,
+      ctrl_cmd,
+      rear_steer);
+
+  ASSERT_TRUE(result.result);
+
+  // Expected Stanley cross-track correction
+  const double expected_cross_track_term =
+    std::atan2(
+      0.8 * (-0.1),
+      5.0 + 1.5);
+
+  // Equivalent 2WS front steering
+  const double expected_front_steer_2WS =
+    15.0 * expected_cross_track_term;
+
+  // Saturation
+  const double expected_front_steer_2WS_sat =
+    std::clamp(
+      expected_front_steer_2WS,
+      -0.7,
+      0.7);
+
+  // 4WS gain
+  const double expected_gain_4WS =
+    calculate4WSGain(
+      data.reference_curvature,
+      kappa_gain_LUT,
+      gain_4WS_LUT);
+
+  const double expected_front_steer =
+    expected_gain_4WS *
+    expected_front_steer_2WS_sat;
+
+  // Rear steering ratio
+  const double expected_rr =
+    calculateRearSteeringRatio(
+      data.reference_curvature,
+      k_ref_LUT,
+      rr_LUT);
+
+  const double expected_rear_steer =
+    expected_rr *
+    expected_front_steer;
+
+  EXPECT_NEAR(
+    ctrl_cmd.steering_tire_angle,
+    expected_front_steer,
+    1e-4);
+
+  EXPECT_NEAR(
+    rear_steer,
+    expected_rear_steer,
+    1e-4);
+
+  // Negative curvature -> negative front steering
+  EXPECT_LT(
+    ctrl_cmd.steering_tire_angle,
+    0.0);
+
+  // Counter-phase steering -> positive rear steering
+  EXPECT_GT(
+    rear_steer,
+    0.0);
+
+   std::cout
+   << "reference curvature = " << data.reference_curvature
+   << ", front_steer = " << ctrl_cmd.steering_tire_angle
+   << ", rear steer = " << rear_steer
+   << ", expected gain 4WS = " << expected_gain_4WS
+   << std::endl;
+}
+
+TEST(StanleyTest, CalculateStanley)
+{
+  const auto [
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT] = loadStanleyLUT();
+
+  Stanley stanley(
+    0.1,
+    2.0,
+    2.0,
+    0.7,
+    0.8,
+    1.5,
+    15.0,
+    k_ref_LUT,
+    rr_LUT,
+    kappa_gain_LUT,
+    gain_4WS_LUT);
+
+  Trajectory trajectory;
+
+  // Straight trajectory along the x axis.
+  for (int i = 0; i < 20; ++i) {
+    autoware_planning_msgs::msg::TrajectoryPoint point;
+    point.pose.position.x = static_cast<double>(i);
+    point.pose.position.y = 0.0;
+    point.pose.orientation.w = 1.0;
+
+    trajectory.points.push_back(point);
+  }
+
+  Odometry current_odometry;
+  current_odometry.pose.pose.position.x = 5.0;
+  current_odometry.pose.pose.position.y = 0.1;
+  current_odometry.pose.pose.orientation.w = 1.0;
+
+  Odometry predicted_odometry = current_odometry;
+
+  Lateral ctrl_cmd;
+  double rear_steer = 0.0;
+
+  const auto result =
+    stanley.calculateStanley(
+      trajectory,
+      current_odometry,
+      predicted_odometry,
+      ctrl_cmd,
+      rear_steer);
+
+  ASSERT_TRUE(result.result);
+
+  EXPECT_TRUE(std::isfinite(ctrl_cmd.steering_tire_angle));
+  EXPECT_TRUE(std::isfinite(rear_steer));
+
+  EXPECT_LE(
+    std::abs(ctrl_cmd.steering_tire_angle),
+    0.7 + 1e-12);
+
+  std::cout
+   << ", front_steer = " << ctrl_cmd.steering_tire_angle
+   << ", rear steer = " << rear_steer
+   << std::endl;
 }
 
 }  // namespace autoware::motion::control::stanley_lateral_controller

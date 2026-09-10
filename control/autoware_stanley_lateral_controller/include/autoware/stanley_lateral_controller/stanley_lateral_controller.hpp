@@ -68,11 +68,6 @@ private:
   int m_average_num;
   double m_steering_offset_limit;
 
-  // -- Stanley controller --
-  double m_k_gain1;
-  double m_k_soft;
-  double m_k_gain2;
-
   void setTrajectory(const Trajectory & msg);
 
   [[nodiscard]] bool isValidTrajectory(const Trajectory & traj) const;
