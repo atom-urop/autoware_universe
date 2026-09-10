@@ -110,7 +110,23 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 
   m_steering_offset_limit =
     node.declare_parameter<double>("steering_offset_limit");
-    
+  
+  m_converged_steer_rad =
+    node.declare_parameter<double>("converged_steer_rad");
+
+  m_rear_steering_subscriber =
+  node.create_subscription<SteeringReport>(
+    "/simulation/output/rear_steering",
+    rclcpp::QoS{1},
+    [this](const SteeringReport::ConstSharedPtr msg) {
+      m_current_rear_steering = *msg;
+    });
+
+  m_rear_steering_publisher =
+  node.create_publisher<Lateral>(
+    "/simulation/input/rear_steering_command",
+    rclcpp::QoS{1});
+
 }
 
 void StanleyLateralController::setTrajectory(const Trajectory & msg)
@@ -201,6 +217,26 @@ if (!stanley_result.result) {
     stanley_result.reason.c_str());
   return output;
 }
+
+Lateral rear_steering_cmd;
+rear_steering_cmd.steering_tire_angle = rear_steer;
+
+m_rear_steering_publisher->publish(rear_steering_cmd);
+
+const bool front_converged =
+  std::abs(
+    output.control_cmd.steering_tire_angle -
+    m_current_steering.steering_tire_angle) <
+  m_converged_steer_rad;
+
+const bool rear_converged =
+  std::abs(
+    rear_steer -
+    m_current_rear_steering.steering_tire_angle) <
+  m_converged_steer_rad;
+
+output.sync_data.is_steer_converged =
+  front_converged && rear_converged;
 
 return output;
 }

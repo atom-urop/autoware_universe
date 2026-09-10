@@ -48,6 +48,11 @@ private:
   Odometry m_current_kinematic_state;
   SteeringReport m_current_steering;
   Trajectory m_current_trajectory;
+  SteeringReport m_current_rear_steering;
+
+  // -- subscription rear steering status for Stanley controller --
+  rclcpp::Subscription<SteeringReport>::SharedPtr m_rear_steering_subscriber;
+  rclcpp::Publisher<Lateral>::SharedPtr m_rear_steering_publisher;
 
   // -- system --
   double m_wheel_base;
@@ -67,6 +72,9 @@ private:
   double m_update_steer_threshold;
   int m_average_num;
   double m_steering_offset_limit;
+
+  // for output.sync_data.is_steer_converged
+  double m_converged_steer_rad;
 
   void setTrajectory(const Trajectory & msg);
 

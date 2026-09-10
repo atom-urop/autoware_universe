@@ -11,6 +11,9 @@
     average_num: 1000
     steering_offset_limit: 0.02
 
+    # -- steer converged --
+    converged_steer_rad: 0.1
+
     # -- Stanley controller --
     k_gain1: 0.8
     k_soft: 1.5
