@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "autoware/stanley_lateral_controller/stanley_lateral_controller.hpp"
-
+#include "autoware_stanley_lateral_controller/msg/stanley_debug.hpp"
 #include "autoware/stanley_lateral_controller/stanley_utils.hpp"
 
 #include <rclcpp/rclcpp.hpp>
@@ -129,6 +129,11 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
     "/simulation/input/rear_steering_command",
     rclcpp::QoS{1});
 
+  m_debug_publisher =
+    node.create_publisher<autoware_stanley_lateral_controller::msg::StanleyDebug>(
+      "/control/stanley/debug",
+      10);
+
 }
 
 void StanleyLateralController::setTrajectory(const Trajectory & msg)
@@ -205,12 +210,15 @@ trajectory_follower::LateralOutput output;
 
 double rear_steer = 0.0;
 
+StanleyDebugData stanley_debug_data;
+
 const auto stanley_result = m_stanley->calculateStanley(
   m_current_trajectory,
   current_front_odometry,
   predicted_front_odometry,
   output.control_cmd,
-  rear_steer);
+  rear_steer,
+  stanley_debug_data);
 
 if (!stanley_result.result) {
   RCLCPP_WARN(
@@ -222,10 +230,26 @@ if (!stanley_result.result) {
 
 output.control_cmd.stamp = m_clock->now();
 
+// publishing /simulation/input/rear_steering_command
 Lateral rear_steering_cmd;
 rear_steering_cmd.steering_tire_angle = rear_steer;
 
 m_rear_steering_publisher->publish(rear_steering_cmd);
+
+// publishing /control/stanley/debug
+autoware_stanley_lateral_controller::msg::StanleyDebug debug_msg;
+
+debug_msg.lateral_error = stanley_debug_data.lateral_error;
+debug_msg.reference_curvature = stanley_debug_data.reference_curvature;
+debug_msg.longitudinal_velocity = stanley_debug_data.longitudinal_velocity;
+debug_msg.cross_track_term = stanley_debug_data.cross_track_term;
+debug_msg.front_steer_2ws = stanley_debug_data.front_steer_2ws;
+debug_msg.front_steer = stanley_debug_data.front_steer;
+debug_msg.rear_steer = stanley_debug_data.rear_steer;
+debug_msg.rr = stanley_debug_data.rr;
+debug_msg.gain_4ws = stanley_debug_data.gain_4ws;
+
+m_debug_publisher->publish(debug_msg);
 
 const bool front_converged =
   std::abs(

@@ -17,6 +17,7 @@
 
 #include "autoware/trajectory_follower_base/lateral_controller_base.hpp"
 #include "autoware/stanley_lateral_controller/stanley.hpp"
+#include "autoware_stanley_lateral_controller/msg/stanley_debug.hpp"
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -54,6 +55,10 @@ private:
   // -- subscription rear steering status for Stanley controller --
   rclcpp::Subscription<SteeringReport>::SharedPtr m_rear_steering_subscriber;
   rclcpp::Publisher<Lateral>::SharedPtr m_rear_steering_publisher;
+
+  // -- publishing /control/stanley/debug topic --
+  rclcpp::Publisher<autoware_stanley_lateral_controller::msg::StanleyDebug>::SharedPtr
+  m_debug_publisher;
 
   // -- system --
   double m_wheel_base;

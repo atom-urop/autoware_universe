@@ -1,0 +1,9 @@
+float64 lateral_error
+float64 reference_curvature
+float64 longitudinal_velocity
+float64 cross_track_term
+float64 front_steer_2ws
+float64 front_steer
+float64 rear_steer
+float64 rr
+float64 gain_4ws

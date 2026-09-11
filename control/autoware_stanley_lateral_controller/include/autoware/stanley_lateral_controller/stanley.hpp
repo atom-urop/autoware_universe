@@ -43,6 +43,20 @@ struct StanleyData
   double longitudinal_velocity;
 };
 
+struct StanleyDebugData
+{
+  double lateral_error;
+  double reference_curvature;
+  double longitudinal_velocity;
+
+  double cross_track_term;
+  double front_steer_2ws;
+  double front_steer;
+  double rear_steer;
+  double rr;
+  double gain_4ws;
+};
+
 class Stanley
 {
 
@@ -78,7 +92,8 @@ public:
     const Odometry & current_front_odometry,
     const Odometry & predicted_front_odometry,
     Lateral & ctrl_cmd,
-    double & rear_steer);
+    double & rear_steer,
+    StanleyDebugData & stanley_debug_data);
 
   ResultWithReason getData(
     const Trajectory & reference_trajectory,
@@ -89,7 +104,8 @@ public:
   ResultWithReason calculateControl(
     const StanleyData & stanley_data,
     Lateral & ctrl_cmd,
-    double & rear_steer);
+    double & rear_steer,
+    StanleyDebugData & stanley_debug_data);
 
   double ego_nearest_dist_threshold{3.0};
   double ego_nearest_yaw_threshold{1.5707963267948966};

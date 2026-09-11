@@ -965,11 +965,14 @@ TEST(StanleyTest, CalculateControlZeroLateralError)
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
+  StanleyDebugData debug_data;
+
   const auto result =
     stanley.calculateControl(
       data,
       ctrl_cmd,
-      rear_steer);
+      rear_steer,
+      debug_data);
 
   ASSERT_TRUE(result.result);
 
@@ -1014,11 +1017,14 @@ TEST(StanleyTest, CalculateControlPositiveLateralError)
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
+  StanleyDebugData debug_data;
+
   const auto result =
     stanley.calculateControl(
       data,
       ctrl_cmd,
-      rear_steer);
+      rear_steer,
+      debug_data);
 
   ASSERT_TRUE(result.result);
 
@@ -1076,11 +1082,14 @@ TEST(StanleyTest, CalculateControlNegativeLateralError)
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
+  StanleyDebugData debug_data;
+
   const auto result =
     stanley.calculateControl(
       data,
       ctrl_cmd,
-      rear_steer);
+      rear_steer,
+      debug_data);
 
   ASSERT_TRUE(result.result);
 
@@ -1191,11 +1200,14 @@ TEST(StanleyTest, CalculateControlWithCurvature)
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
+  StanleyDebugData debug_data;
+
   const auto result =
     stanley.calculateControl(
       data,
       ctrl_cmd,
-      rear_steer);
+      rear_steer,
+      debug_data);
 
   ASSERT_TRUE(result.result);
 
@@ -1287,11 +1299,14 @@ TEST(StanleyTest, CalculateControlSaturatesBefore4WSGain)
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
+  StanleyDebugData debug_data;
+
   const auto result =
     stanley.calculateControl(
       data,
       ctrl_cmd,
-      rear_steer);
+      rear_steer,
+      debug_data);
 
   ASSERT_TRUE(result.result);
 
@@ -1397,11 +1412,14 @@ TEST(StanleyTest, CalculateControlNegativeReferenceCurvature)
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
+  StanleyDebugData debug_data;
+
   const auto result =
     stanley.calculateControl(
       data,
       ctrl_cmd,
-      rear_steer);
+      rear_steer,
+      debug_data);
 
   ASSERT_TRUE(result.result);
 
@@ -1515,13 +1533,16 @@ TEST(StanleyTest, CalculateStanley)
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
+  StanleyDebugData debug_data;
+
   const auto result =
     stanley.calculateStanley(
       trajectory,
       current_odometry,
       predicted_odometry,
       ctrl_cmd,
-      rear_steer);
+      rear_steer,
+      debug_data);
 
   ASSERT_TRUE(result.result);
 

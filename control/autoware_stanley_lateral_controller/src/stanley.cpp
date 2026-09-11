@@ -55,7 +55,8 @@ ResultWithReason Stanley::calculateStanley(
   const Odometry & current_front_odometry,
   const Odometry & predicted_front_odometry,
   Lateral & ctrl_cmd,
-  double & rear_steer)
+  double & rear_steer,
+  StanleyDebugData & stanley_debug_data)
 {
   StanleyData stanley_data;
 
@@ -71,10 +72,20 @@ ResultWithReason Stanley::calculateStanley(
       fmt::format("getting Stanley Data ({}).", data_result.reason)};
   }
 
+  stanley_debug_data.lateral_error =
+  stanley_data.lateral_error;
+
+  stanley_debug_data.reference_curvature =
+    stanley_data.reference_curvature;
+
+  stanley_debug_data.longitudinal_velocity =
+    stanley_data.longitudinal_velocity;
+
   return calculateControl(
     stanley_data,
     ctrl_cmd,
-    rear_steer);
+    rear_steer,
+    stanley_debug_data);
 
 }
 
@@ -145,7 +156,8 @@ ResultWithReason Stanley::getData(
 ResultWithReason Stanley::calculateControl(
   const StanleyData & stanley_data,
   Lateral & ctrl_cmd,
-  double & rear_steer)
+  double & rear_steer,
+  StanleyDebugData & stanley_debug_data)
 {
   // ============================================================
   // 1. 4WS parameters from LUTs
@@ -161,6 +173,9 @@ ResultWithReason Stanley::calculateControl(
     m_kappa_gain_LUT,
     m_gain_4WS_LUT);
 
+  stanley_debug_data.rr = rr;
+  stanley_debug_data.gain_4ws = gain_4WS;
+
   // ============================================================
   // 2. Stanley cross-track correction
   // ============================================================
@@ -168,6 +183,8 @@ ResultWithReason Stanley::calculateControl(
   const double cross_track_term = std::atan2(
     m_k_gain1 * stanley_data.lateral_error,
     stanley_data.longitudinal_velocity + m_k_soft);
+  
+  stanley_debug_data.cross_track_term = cross_track_term;
 
   // ============================================================
   // 3. Equivalent 2WS front steering
@@ -184,6 +201,8 @@ ResultWithReason Stanley::calculateControl(
     front_steer,
     -m_max_steer_angle,
     m_max_steer_angle);
+  
+  stanley_debug_data.front_steer_2ws = front_steer;
 
   // ============================================================
   // 5. Apply 4WS gain
@@ -192,12 +211,17 @@ ResultWithReason Stanley::calculateControl(
   front_steer =
     gain_4WS * front_steer;
 
+  
+  stanley_debug_data.front_steer = front_steer;
+
   // ============================================================
   // 6. Rear steering
   // ============================================================
 
   rear_steer =
     rr * front_steer;
+
+  stanley_debug_data.rear_steer = rear_steer;
 
   // ============================================================
   // 7. Front steering output
