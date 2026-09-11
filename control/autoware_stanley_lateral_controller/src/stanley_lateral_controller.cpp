@@ -27,6 +27,8 @@ namespace autoware::motion::control::stanley_lateral_controller
 StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
 {
 
+  m_clock = node.get_clock();
+
   const double traj_resample_dist =
     node.declare_parameter<double>("traj_resample_dist");
 
@@ -217,6 +219,8 @@ if (!stanley_result.result) {
     stanley_result.reason.c_str());
   return output;
 }
+
+output.control_cmd.stamp = m_clock->now();
 
 Lateral rear_steering_cmd;
 rear_steering_cmd.steering_tire_angle = rear_steer;

@@ -43,6 +43,7 @@ public:
   ~StanleyLateralController() = default;
 
 private:
+  rclcpp::Clock::SharedPtr m_clock;
 
   // -- current vehicle state --
   Odometry m_current_kinematic_state;
