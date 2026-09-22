@@ -73,7 +73,7 @@ ResultWithReason Stanley::calculateStanley(
   }
 
   stanley_debug_data.lateral_error =
-  stanley_data.lateral_error;
+    stanley_data.current_lateral_error;
 
   stanley_debug_data.reference_curvature =
     stanley_data.reference_curvature;
@@ -113,10 +113,15 @@ ResultWithReason Stanley::getData(
     ego_nearest_yaw_threshold,
     predicted_nearest_idx);
 
+  const double current_lateral_error = calcLateralErrorStanley(
+    current_front_odometry,
+    current_nearest_pose);
+
   const double predicted_lateral_error = calcLateralErrorStanley(
     predicted_front_odometry,
     predicted_nearest_pose);
 
+  data.current_lateral_error = current_lateral_error;
   data.lateral_error = predicted_lateral_error;
 
   // Calculate the curvature vector for the entire reference trajectory.
