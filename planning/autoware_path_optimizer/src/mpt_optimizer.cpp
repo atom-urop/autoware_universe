@@ -1602,9 +1602,15 @@ Eigen::VectorXd MPTOptimizer::calcInitialSolutionForManualWarmStart(
   u0(1) = prev_ref_points.at(nearest_idx).optimized_kinematic_state.yaw;
 
   // set previous steer angles
-  for (size_t i = 0; i < N_u; ++i) {
-    const size_t prev_target_idx = std::min(nearest_idx + i, prev_ref_points.size() - 1);
-    u0(D_x + i) = prev_ref_points.at(prev_target_idx).optimized_input;
+  for (size_t i = 0; i < N_ref - 1; ++i) {
+    const size_t prev_target_idx =
+      std::min(nearest_idx + i, prev_ref_points.size() - 1);
+
+    u0(D_x + i * D_u) =
+      prev_ref_points.at(prev_target_idx).optimized_front_steer;
+
+    u0(D_x + i * D_u + 1) =
+      prev_ref_points.at(prev_target_idx).optimized_rear_steer;
   }
 
   // set previous slack variables
@@ -1686,12 +1692,14 @@ std::optional<std::vector<TrajectoryPoint>> MPTOptimizer::calcMPTPoints(
       }
     }
 
-    // memorize optimization result (optimized_kinematic_state and optimized_input)
+    // memorize optimization result (optimized_kinematic_state and steering angles)
     ref_point.optimized_kinematic_state = KinematicState{lat_error, yaw_error};
     if (i == N_ref - 1) {
-      ref_point.optimized_input = 0.0;
+      ref_point.optimized_front_steer = 0.0;
+      ref_point.optimized_rear_steer = 0.0;
     } else {
-      ref_point.optimized_input = steer_angles(i * D_u);
+      ref_point.optimized_front_steer = steer_angles(i * D_u);
+      ref_point.optimized_rear_steer = steer_angles(i * D_u + 1);
     }
 
     std::vector<double> tmp_slack_variables;

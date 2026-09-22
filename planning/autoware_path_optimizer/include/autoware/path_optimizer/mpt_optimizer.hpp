@@ -106,7 +106,8 @@ struct ReferencePoint
   // optimization result
   std::optional<KinematicState> fixed_kinematic_state{std::nullopt};
   KinematicState optimized_kinematic_state{};
-  double optimized_input{};
+  double optimized_front_steer{};
+  double optimized_rear_steer{};
   std::optional<std::vector<double>> slack_variables{std::nullopt};
 
   double getYaw() const { return tf2::getYaw(pose.orientation); }
@@ -144,7 +145,8 @@ struct ReferencePoint
     }
     os << ",\n";
     os << "\toptimized_kinematic_state: " << ref_point.optimized_kinematic_state << ",\n";
-    os << "\toptimized_input: " << ref_point.optimized_input << ",\n";
+    os << "\toptimized_front_steer: " << ref_point.optimized_front_steer << ",\n";
+    os << "\toptimized_rear_steer: " << ref_point.optimized_rear_steer << ",\n";
     os << "\tslack_variables: ";
     if (ref_point.slack_variables) {
       os << "[";
