@@ -37,7 +37,7 @@
     mpt:
       option:
         # TODO(murooka) enable the following. Currently enabling the flag makes QP so heavy
-        steer_limit_constraint: false
+        steer_limit_constraint: true
         visualize_sampling_num: 1
         enable_manual_warm_start: false
         enable_warm_start: false

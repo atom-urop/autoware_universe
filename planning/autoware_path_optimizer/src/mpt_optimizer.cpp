@@ -1464,23 +1464,28 @@ MPTOptimizer::ConstraintMatrix MPTOptimizer::calcConstraintMatrix(
   time_keeper_->end_track("constraintMatrix_fixedPoints");
 
   // 4. steer angle limit
-  time_keeper_->start_track("constraintMatrix_steerLimit");
+    time_keeper_->start_track("constraintMatrix_steerLimit");
   if (mpt_param_.steer_limit_constraint) {
     A.block(A_rows_end, N_x, N_u, N_u) = Eigen::MatrixXd::Identity(N_u, N_u);
 
-    // TODO(murooka) use curvature by stabling optimization
-    // Currently, when using curvature, the optimization result is weird with sample_map.
-    // lb.segment(A_rows_end, N_u) = Eigen::MatrixXd::Constant(N_u, 1, -mpt_param_.max_steer_rad);
-    // ub.segment(A_rows_end, N_u) = Eigen::MatrixXd::Constant(N_u, 1, mpt_param_.max_steer_rad);
+    if (D_u == 1) {
+      // 2WS: preserve the original Autoware behavior.
+      for (size_t i = 0; i < N_u; ++i) {
+        const double ref_steer_angle =
+          std::atan2(vehicle_info_.wheel_base_m * ref_points.at(i).curvature, 1.0);
 
-    for (size_t i = 0; i < N_u; ++i) {
-      const double ref_steer_angle =
-        std::atan2(vehicle_info_.wheel_base_m * ref_points.at(i).curvature, 1.0);
-      lb(A_rows_end + i) = ref_steer_angle - mpt_param_.max_steer_rad;
-      ub(A_rows_end + i) = ref_steer_angle + mpt_param_.max_steer_rad;
+        lb(A_rows_end + i) = ref_steer_angle - mpt_param_.max_steer_rad;
+        ub(A_rows_end + i) = ref_steer_angle + mpt_param_.max_steer_rad;
+      }
+    } else if (D_u == 2) {
+      // 4WS: impose the physical steering limits independently
+      // on front and rear steering.
+      for (size_t i = 0; i < N_u; ++i) {
+        lb(A_rows_end + i) = -mpt_param_.max_steer_rad;
+        ub(A_rows_end + i) = mpt_param_.max_steer_rad;
+      }
     }
 
-    // cppcheck-suppress unreadVariable
     A_rows_end += N_u;
   }
   time_keeper_->end_track("constraintMatrix_steerLimit");

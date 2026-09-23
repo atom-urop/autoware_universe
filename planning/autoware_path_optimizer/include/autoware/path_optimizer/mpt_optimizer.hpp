@@ -195,6 +195,7 @@ private:
 
   FRIEND_TEST(MPTOptimizerTest, SteeringRateMatrix4WS);
   FRIEND_TEST(MPTOptimizerTest, SteeringRateMatrix2WS);
+  FRIEND_TEST(MPTOptimizerTest, SteeringConstraintBounds4WS);
 
   struct ValueMatrix
   {

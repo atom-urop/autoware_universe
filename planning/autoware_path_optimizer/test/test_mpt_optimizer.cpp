@@ -289,4 +289,130 @@ TEST_F(MPTOptimizerTest, SteeringRateMatrix2WS)
     -steer_rate_weight);
 }
 
+TEST_F(MPTOptimizerTest, SteeringConstraintBounds4WS)
+{
+  constexpr size_t N_ref = 3;
+  constexpr size_t D_x = 2;
+  constexpr size_t D_u = 2;
+  constexpr size_t N_x = N_ref * D_x;
+  constexpr size_t N_u = (N_ref - 1) * D_u;
+
+  // Create a dedicated optimizer with only the steering constraint enabled.
+  const auto package_path =
+    ament_index_cpp::get_package_share_directory("autoware_path_optimizer");
+
+  const auto test_utils_package =
+    ament_index_cpp::get_package_share_directory("autoware_test_utils");
+
+  const auto vehicle_info_yaml =
+    test_utils_package + "/config/test_vehicle_info.param.yaml";
+
+  const auto common_yaml =
+    test_utils_package + "/config/test_common.param.yaml";
+
+  const auto nearest_search_yaml =
+    test_utils_package + "/config/test_nearest_search.param.yaml";
+
+  const auto path_optimizer_yaml =
+    package_path + "/config/path_optimizer.param.yaml";
+
+  rclcpp::NodeOptions node_options;
+
+  node_options.arguments(
+    {
+      "--ros-args",
+      "--params-file", vehicle_info_yaml,
+      "--params-file", common_yaml,
+      "--params-file", nearest_search_yaml,
+      "--params-file", path_optimizer_yaml
+    });
+
+  node_options.parameter_overrides(
+    {
+      rclcpp::Parameter("mpt.kinematics.model_type", "4ws"),
+      rclcpp::Parameter("mpt.constraint.soft_constraint", false),
+      rclcpp::Parameter("mpt.constraint.hard_constraint", false),
+    });
+
+  auto node =
+    std::make_shared<rclcpp::Node>("mpt_optimizer_test_steering_constraint", node_options);
+
+  const auto vehicle_info =
+    autoware::vehicle_info_utils::VehicleInfoUtils(*node).getVehicleInfo();
+
+  const auto ego_nearest_param =
+    EgoNearestParam(node.get());
+
+  const auto traj_param =
+    TrajectoryParam(node.get());
+
+  auto debug_data_ptr =
+    std::make_shared<DebugData>();
+
+  auto time_keeper =
+    std::make_shared<autoware_utils::TimeKeeper>();
+
+  MPTOptimizer optimizer(
+    node.get(),
+    false,
+    ego_nearest_param,
+    vehicle_info,
+    traj_param,
+    debug_data_ptr,
+    time_keeper);
+
+  std::vector<ReferencePoint> ref_points(N_ref);
+
+  const size_t N_collision_check =
+    optimizer.vehicle_circle_longitudinal_offsets_.size();
+
+  for (auto & ref_point : ref_points) {
+    ref_point.curvature = 0.1;
+
+    // Data required by the collision-free section.
+    ref_point.beta.resize(N_collision_check, 0.0);
+
+    ref_point.bounds_on_constraints.resize(
+      N_collision_check,
+      Bounds{-10.0, 10.0});
+  }
+
+  StateEquationGenerator::Matrix mpt_mat;
+
+  mpt_mat.A = Eigen::MatrixXd::Zero(N_x, N_x);
+  mpt_mat.B = Eigen::MatrixXd::Zero(N_x, N_u);
+  mpt_mat.W = Eigen::VectorXd::Zero(N_x);
+
+  const auto constraint_matrix =
+    optimizer.calcConstraintMatrix(mpt_mat, ref_points);
+
+  const double max_steer =
+    optimizer.mpt_param_.max_steer_rad;
+
+  // The steering constraints are the last N_u rows.
+  const size_t steer_row_start =
+    constraint_matrix.linear.rows() - N_u;
+
+  for (size_t i = 0; i < N_u; ++i) {
+    // Check physical steering limits.
+    EXPECT_DOUBLE_EQ(
+      constraint_matrix.lower_bound(steer_row_start + i),
+      -max_steer);
+
+    EXPECT_DOUBLE_EQ(
+      constraint_matrix.upper_bound(steer_row_start + i),
+      max_steer);
+
+    // Check that each steering constraint acts on the
+    // corresponding control variable.
+    for (size_t j = 0; j < N_u; ++j) {
+      const double expected = (i == j) ? 1.0 : 0.0;
+
+      EXPECT_DOUBLE_EQ(
+        constraint_matrix.linear(steer_row_start + i, N_x + j),
+        expected);
+    }
+  }
+}
+
 }  // namespace autoware::path_optimizer
