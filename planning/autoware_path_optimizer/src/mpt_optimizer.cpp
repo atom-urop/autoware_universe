@@ -194,6 +194,18 @@ MPTOptimizer::MPTParam::MPTParam(
   // kinematics
   max_steer_rad = vehicle_info.max_steer_angle_rad;
 
+  model_type = node->declare_parameter<std::string>(
+    "mpt.kinematics.model_type", "bicycle");
+
+  k_ref = node->declare_parameter<std::vector<double>>(
+    "mpt.kinematics.k_ref", std::vector<double>{});
+
+  delta_f_ref = node->declare_parameter<std::vector<double>>(
+    "mpt.kinematics.delta_f_ref", std::vector<double>{});
+
+  rr_ref = node->declare_parameter<std::vector<double>>(
+    "mpt.kinematics.rr_ref", std::vector<double>{});
+
   // NOTE: By default, optimization_center_offset will be vehicle_info.wheel_base * 0.8
   //       The 0.8 scale is adopted as it performed the best.
   constexpr double default_wheel_base_ratio = 0.8;
@@ -417,7 +429,14 @@ MPTOptimizer::MPTOptimizer(
 
   // state equation generator
   state_equation_generator_ =
-    StateEquationGenerator(vehicle_info_.wheel_base_m, mpt_param_.max_steer_rad, time_keeper_);
+    StateEquationGenerator(
+      vehicle_info_.wheel_base_m,
+      mpt_param_.max_steer_rad,
+      mpt_param_.model_type,
+      mpt_param_.k_ref,
+      mpt_param_.delta_f_ref,
+      mpt_param_.rr_ref,
+      time_keeper_);
 
   // osqp solver
   osqp_solver_ptr_ = std::make_unique<autoware::osqp_interface::OSQPInterface>(osqp_epsilon_);

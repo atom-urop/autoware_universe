@@ -46,16 +46,18 @@ StateEquationGenerator::Matrix StateEquationGenerator::calcMatrix(
 
   A.block(0, 0, D_x, D_x) = Eigen::MatrixXd::Identity(D_x, D_x);
 
-  // calculate one-step state equation considering kinematics N_ref times
   for (size_t i = 1; i < N_ref; ++i) {
-    // get discrete kinematics matrix A, B, W
     const auto & p = ref_points.at(i - 1);
 
-    // TODO(murooka) use curvature by stabling optimization
-    // Currently, when using curvature, the optimization result is weird with sample_map.
-    // vehicle_model_ptr_->calculateStateEquationMatrix(Ad, Bd, Wd, p.curvature,
-    // p.delta_arc_length);
-    vehicle_model_ptr_->calculateStateEquationMatrix(Ad, Bd, Wd, 0.0, p.delta_arc_length);
+    // Curvature is used only for the 4WS model.
+    // For the original 2WS model, curvature is kept at 0.0 to preserve
+    // the existing optimization behavior.
+
+    const double curvature =
+      use_reference_curvature_ ? p.curvature : 0.0;
+
+    vehicle_model_ptr_->calculateStateEquationMatrix(
+      Ad, Bd, Wd, curvature, p.delta_arc_length);
 
     A.block(i * D_x, (i - 1) * D_x, D_x, D_x) = Ad;
     B.block(i * D_x, (i - 1) * D_u, D_x, D_u) = Bd;

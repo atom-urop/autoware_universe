@@ -260,6 +260,10 @@ private:
     // kinematics
     double optimization_center_offset;
     double max_steer_rad;
+    std::string model_type;
+    std::vector<double> k_ref;
+    std::vector<double> delta_f_ref;
+    std::vector<double> rr_ref;
 
     // clearance
     double hard_clearance_from_road;

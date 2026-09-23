@@ -29,6 +29,7 @@ ament_auto_add_library(autoware_path_optimizer SHARED
   # vehicle model
   src/vehicle_model/vehicle_model_interface.cpp
   src/vehicle_model/vehicle_model_bicycle_kinematics.cpp
+  src/vehicle_model/vehicle_model_4ws_kinematics.cpp
   # utils
   src/utils/trajectory_utils.cpp
   src/utils/geometry_utils.cpp
@@ -50,6 +51,13 @@ if(BUILD_TESTING)
     test/test_path_optimizer_node_interface.cpp
   )
   target_link_libraries(test_${PROJECT_NAME}
+    ${PROJECT_NAME}
+  )
+
+  ament_add_gtest(test_vehicle_model_4ws_kinematics
+    test/test_vehicle_model_4ws_kinematics.cpp
+  )
+  target_link_libraries(test_vehicle_model_4ws_kinematics
     ${PROJECT_NAME}
   )
 endif()

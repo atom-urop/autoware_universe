@@ -19,9 +19,11 @@
 #include "autoware/path_optimizer/vehicle_model/vehicle_model_bicycle_kinematics.hpp"
 #include "autoware/path_optimizer/vehicle_model/vehicle_model_interface.hpp"
 #include "autoware_utils/system/time_keeper.hpp"
+#include "autoware/path_optimizer/vehicle_model/vehicle_model_4ws_kinematics.hpp"
 
 #include <memory>
 #include <vector>
+#include <string>
 
 namespace autoware::path_optimizer
 {
@@ -47,14 +49,32 @@ public:
     return os;
   }
 
-  StateEquationGenerator() = default;
-  StateEquationGenerator(
-    const double wheel_base, const double max_steer_rad,
-    const std::shared_ptr<autoware_utils::TimeKeeper> time_keeper)
-  : vehicle_model_ptr_(std::make_unique<KinematicsBicycleModel>(wheel_base, max_steer_rad)),
-    time_keeper_(time_keeper)
-  {
+StateEquationGenerator() = default;
+
+StateEquationGenerator(
+  const double wheel_base,
+  const double max_steer_rad,
+  const std::string & model_type,
+  const std::vector<double> & k_ref,
+  const std::vector<double> & delta_f_ref,
+  const std::vector<double> & rr_ref,
+  const std::shared_ptr<autoware_utils::TimeKeeper> time_keeper)
+: time_keeper_(time_keeper)
+{
+  use_reference_curvature_ = (model_type == "4ws");
+
+  if (model_type == "4ws") {
+    vehicle_model_ptr_ = std::make_unique<Kinematics4WSModel>(
+      wheel_base,
+      max_steer_rad,
+      k_ref,
+      delta_f_ref,
+      rr_ref);
+  } else {
+    vehicle_model_ptr_ =
+      std::make_unique<KinematicsBicycleModel>(wheel_base, max_steer_rad);
   }
+}
 
   int getDimX() const { return vehicle_model_ptr_->getDimX(); }
   int getDimU() const { return vehicle_model_ptr_->getDimU(); }
@@ -68,6 +88,7 @@ public:
 private:
   std::unique_ptr<VehicleModelInterface> vehicle_model_ptr_;
   mutable std::shared_ptr<autoware_utils::TimeKeeper> time_keeper_;
+  bool use_reference_curvature_{false};
 };
 }  // namespace autoware::path_optimizer
 #endif  // AUTOWARE__PATH_OPTIMIZER__STATE_EQUATION_GENERATOR_HPP_
