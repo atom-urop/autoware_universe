@@ -192,6 +192,10 @@ public:
   int getNumberOfPoints() const;
 
 private:
+
+  FRIEND_TEST(MPTOptimizerTest, SteeringRateMatrix4WS);
+  FRIEND_TEST(MPTOptimizerTest, SteeringRateMatrix2WS);
+
   struct ValueMatrix
   {
     Eigen::SparseMatrix<double> Q;

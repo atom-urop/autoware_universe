@@ -1223,8 +1223,16 @@ MPTOptimizer::ValueMatrix MPTOptimizer::calcValueMatrix(
     const double adaptive_steer_weight = autoware::interpolation::lerp(
       mpt_param_.steer_input_weight, mpt_param_.avoidance_steer_input_weight,
       ref_points.at(i).normalized_avoidance_cost);
-    R_triplet_vec.push_back(Eigen::Triplet<double>(D_u * i, D_u * i, adaptive_steer_weight));
+
+    for (size_t j = 0; j < D_u; ++j) {
+      R_triplet_vec.push_back(
+        Eigen::Triplet<double>(
+          D_u * i + j,
+          D_u * i + j,
+          adaptive_steer_weight));
+    }
   }
+
   Eigen::SparseMatrix<double> R_sparse_mat(N_u, N_u);
   addSteerWeightR(R_triplet_vec, ref_points);
 
@@ -1490,16 +1498,41 @@ void MPTOptimizer::addSteerWeightR(
   const std::vector<ReferencePoint> & ref_points) const
 {
   const size_t D_u = state_equation_generator_.getDimU();
-
   const size_t N_ref = ref_points.size();
-  const size_t N_u = (N_ref - 1) * D_u;
 
-  // add steering rate : weight for (u(i) - u(i-1))^2
-  for (size_t i = 0; i < N_u - 1; ++i) {
-    R_triplet_vec.push_back(Eigen::Triplet<double>(i, i, mpt_param_.steer_rate_weight));
-    R_triplet_vec.push_back(Eigen::Triplet<double>(i + 1, i, -mpt_param_.steer_rate_weight));
-    R_triplet_vec.push_back(Eigen::Triplet<double>(i, i + 1, -mpt_param_.steer_rate_weight));
-    R_triplet_vec.push_back(Eigen::Triplet<double>(i + 1, i + 1, mpt_param_.steer_rate_weight));
+  // Add steering rate cost:
+  // (u(i+1) - u(i))^2
+  //
+  // For 2WS:
+  //   δ0 -> δ1 -> δ2 -> ...
+  //
+  // For 4WS:
+  //   δf0 -> δf1 -> δf2 -> ...
+  //   δr0 -> δr1 -> δr2 -> ...
+
+  for (size_t i = 0; i < N_ref - 2; ++i) {
+    for (size_t j = 0; j < D_u; ++j) {
+      const size_t idx_current = D_u * i + j;
+      const size_t idx_next = D_u * (i + 1) + j;
+
+      const double weight = mpt_param_.steer_rate_weight;
+
+      R_triplet_vec.push_back(
+        Eigen::Triplet<double>(
+          idx_current, idx_current, weight));
+
+      R_triplet_vec.push_back(
+        Eigen::Triplet<double>(
+          idx_next, idx_current, -weight));
+
+      R_triplet_vec.push_back(
+        Eigen::Triplet<double>(
+          idx_current, idx_next, -weight));
+
+      R_triplet_vec.push_back(
+        Eigen::Triplet<double>(
+          idx_next, idx_next, weight));
+    }
   }
 }
 

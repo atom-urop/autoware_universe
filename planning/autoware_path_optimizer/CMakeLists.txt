@@ -60,6 +60,13 @@ if(BUILD_TESTING)
   target_link_libraries(test_vehicle_model_4ws_kinematics
     ${PROJECT_NAME}
   )
+
+  ament_add_gtest(test_mpt_optimizer
+    test/test_mpt_optimizer.cpp
+  )
+  target_link_libraries(test_mpt_optimizer
+    ${PROJECT_NAME}
+  )
 endif()
 
 ament_auto_package(
