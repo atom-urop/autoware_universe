@@ -1437,7 +1437,7 @@ MPTOptimizer::ConstraintMatrix MPTOptimizer::calcConstraintMatrix(
       const size_t A_blk_rows = N_ref;
 
       Eigen::MatrixXd A_blk = Eigen::MatrixXd::Zero(A_blk_rows, N_v);
-      A_blk.block(0, 0, N_ref, N_ref) = C_sparse_mat;
+      A_blk.block(0, 0, N_ref, N_x) = C_sparse_mat;
 
       A.block(A_rows_end, 0, A_blk_rows, N_v) = A_blk;
       lb.segment(A_rows_end, A_blk_rows) = part_lb - C_vec;
@@ -1768,7 +1768,17 @@ std::optional<std::vector<TrajectoryPoint>> MPTOptimizer::calcMPTPoints(
     // update pose and velocity
     TrajectoryPoint traj_point;
     traj_point.pose = ref_point.offsetDeviation(lat_error, yaw_error);
+
+    const double yaw_mpt = tf2::getYaw(traj_point.pose.orientation);
+    const double yaw_body = yaw_mpt - ref_point.optimized_rear_steer;
+
+    traj_point.pose.orientation =
+      autoware_utils::create_quaternion_from_yaw(yaw_body);
+
     traj_point.longitudinal_velocity_mps = ref_point.longitudinal_velocity_mps;
+
+    traj_point.front_wheel_angle_rad = ref_point.optimized_front_steer;
+    traj_point.rear_wheel_angle_rad = ref_point.optimized_rear_steer;
 
     traj_points.push_back(traj_point);
   }
