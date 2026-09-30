@@ -60,11 +60,22 @@ private:
   rclcpp::Publisher<autoware_stanley_lateral_controller::msg::StanleyDebug>::SharedPtr
   m_debug_publisher;
 
+  // -- Publishing /control/stanley/reference_trajectory_front topic --
+  rclcpp::Publisher<autoware_planning_msgs::msg::Trajectory>::SharedPtr
+  m_front_trajectory_publisher;
+
+  // -- Parameters callback --
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
+  m_parameter_callback_handle;
+
   // -- system --
   double m_wheel_base;
   double m_max_steer_angle;
   double m_tau_max;
   double m_d0;
+  double m_k_gain1;
+  double m_k_soft;
+  double m_k_gain2;
 
   double m_ego_nearest_dist_threshold;
   double m_ego_nearest_yaw_threshold;

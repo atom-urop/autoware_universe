@@ -87,6 +87,12 @@ public:
     const std::vector<double> & rr_LUT,
     const std::vector<double> & kappa_gain_LUT,
     const std::vector<double> & gain_4WS_LUT);
+  
+  void updateParameters(
+    double max_steer_angle,
+    double k_gain1,
+    double k_soft,
+    double k_gain2);
 
   ResultWithReason calculateStanley(
     const Trajectory & reference_trajectory,

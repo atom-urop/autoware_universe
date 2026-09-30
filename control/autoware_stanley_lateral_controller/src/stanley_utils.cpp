@@ -213,6 +213,30 @@ geometry_msgs::msg::Pose calcNearestPoseInterpStanley(
   return nearest_pose;
 }
 
+autoware_planning_msgs::msg::Trajectory rearToFrontTrajectory(
+  const autoware_planning_msgs::msg::Trajectory & rear_trajectory,
+  const double wheel_base)
+{
+  auto front_trajectory = rear_trajectory;
+
+  for (auto & point : front_trajectory.points) {
+    const double yaw = tf2::getYaw(point.pose.orientation);
+
+    // Rear axle -> front axle position
+    point.pose.position.x +=
+      wheel_base * std::cos(yaw);
+
+    point.pose.position.y +=
+      wheel_base * std::sin(yaw);
+
+    // Rear axle -> front axle lateral velocity
+    point.lateral_velocity_mps +=
+      point.heading_rate_rps * wheel_base;
+  }
+
+  return front_trajectory;
+}
+
  nav_msgs::msg::Odometry rearToFrontOdometry(
   const nav_msgs::msg::Odometry & rear_pose,
   const double wheel_base)

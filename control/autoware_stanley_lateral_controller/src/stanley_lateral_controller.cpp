@@ -57,33 +57,64 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
     node.declare_parameter<std::vector<double>>(
       "gain_4WS_LUT", std::vector<double>{});
 
-  const auto k_gain1 =
+  m_k_gain1 =
     node.declare_parameter<double>("k_gain1", 0.8);
 
-  const auto k_soft =
+  m_k_soft =
     node.declare_parameter<double>("k_soft", 1.5);
 
-  const auto k_gain2 =
+  m_k_gain2 =
     node.declare_parameter<double>("k_gain2", 15.0);
+  
+  m_tau_max =
+    node.declare_parameter<double>("tau_max");
+
+  m_d0 =
+    node.declare_parameter<double>("d0");
 
   m_stanley = std::make_unique<Stanley>(
     traj_resample_dist,
     curvature_calculation_distance,
     m_wheel_base,
     m_max_steer_angle,
-    k_gain1,
-    k_soft,
-    k_gain2,
+    m_k_gain1,
+    m_k_soft,
+    m_k_gain2,
     k_ref_LUT,
     rr_LUT,
     kappa_gain_LUT,
     gain_4WS_LUT);
 
-  m_tau_max =
-    node.declare_parameter<double>("tau_max");
+  m_parameter_callback_handle =
+  node.add_on_set_parameters_callback(
+    [this](const std::vector<rclcpp::Parameter> & parameters) {
+      rcl_interfaces::msg::SetParametersResult result;
+      result.successful = true;
 
-  m_d0 =
-    node.declare_parameter<double>("d0");
+      for (const auto & parameter : parameters) {
+        if (parameter.get_name() == "k_gain1") {
+          m_k_gain1 = parameter.as_double();
+        } else if (parameter.get_name() == "k_soft") {
+          m_k_soft = parameter.as_double();
+        } else if (parameter.get_name() == "k_gain2") {
+          m_k_gain2 = parameter.as_double();
+        } else if (parameter.get_name() == "max_steer_angle") {
+          m_max_steer_angle = parameter.as_double();
+        } else if (parameter.get_name() == "tau_max") {
+          m_tau_max = parameter.as_double();
+        } else if (parameter.get_name() == "d0") {
+          m_d0 = parameter.as_double();
+        }
+      }
+
+      m_stanley->updateParameters(
+        m_max_steer_angle,
+        m_k_gain1,
+        m_k_soft,
+        m_k_gain2);
+
+      return result;
+    });
 
   m_ego_nearest_dist_threshold =
   node.has_parameter("ego_nearest_dist_threshold")
@@ -133,6 +164,11 @@ StanleyLateralController::StanleyLateralController(rclcpp::Node & node)
     node.create_publisher<autoware_stanley_lateral_controller::msg::StanleyDebug>(
       "/control/stanley/debug",
       10);
+
+  m_front_trajectory_publisher =
+    node.create_publisher<autoware_planning_msgs::msg::Trajectory>(
+      "/control/stanley/reference_trajectory_front",
+      rclcpp::QoS{1});
 
 }
 
@@ -194,6 +230,13 @@ trajectory_follower::LateralOutput StanleyLateralController::run(
   m_current_kinematic_state = input_data.current_odometry;
   m_current_steering = input_data.current_steering;
 
+// Front axle trajectory
+const auto front_trajectory = rearToFrontTrajectory(
+  m_current_trajectory,
+  m_wheel_base);
+
+m_front_trajectory_publisher->publish(front_trajectory);
+
 // Current front axle odometry
 const auto current_front_odometry = rearToFrontOdometry(
   m_current_kinematic_state,
@@ -213,7 +256,7 @@ double rear_steer = 0.0;
 StanleyDebugData stanley_debug_data;
 
 const auto stanley_result = m_stanley->calculateStanley(
-  m_current_trajectory,
+  front_trajectory,
   current_front_odometry,
   predicted_front_odometry,
   output.control_cmd,

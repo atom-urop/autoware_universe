@@ -50,6 +50,18 @@ Stanley::Stanley(
 {
 }
 
+void Stanley::updateParameters(
+  const double max_steer_angle,
+  const double k_gain1,
+  const double k_soft,
+  const double k_gain2)
+{
+  m_max_steer_angle = max_steer_angle;
+  m_k_gain1 = k_gain1;
+  m_k_soft = k_soft;
+  m_k_gain2 = k_gain2;
+}
+
 ResultWithReason Stanley::calculateStanley(
   const Trajectory & reference_trajectory,
   const Odometry & current_front_odometry,
