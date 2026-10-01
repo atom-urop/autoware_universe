@@ -76,6 +76,14 @@ StateEquationGenerator(
   }
 }
 
+void updateModel(
+  const double wheel_base,
+  const double max_steer_rad,
+  const std::string & model_type,
+  const std::vector<double> & k_ref,
+  const std::vector<double> & delta_f_ref,
+  const std::vector<double> & rr_ref);
+
   int getDimX() const { return vehicle_model_ptr_->getDimX(); }
   int getDimU() const { return vehicle_model_ptr_->getDimU(); }
 

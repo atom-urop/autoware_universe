@@ -317,6 +317,9 @@ void MPTOptimizer::MPTParam::onParam(const std::vector<rclcpp::Parameter> & para
   update_param<double>(parameters, "mpt.common.delta_arc_length", delta_arc_length);
 
   // kinematics
+  update_param<std::string>(
+    parameters, "mpt.kinematics.model_type", model_type);
+
   update_param<double>(
     parameters, "mpt.kinematics.optimization_center_offset", optimization_center_offset);
 
@@ -488,9 +491,23 @@ void MPTOptimizer::resetPreviousData()
 
 void MPTOptimizer::onParam(const std::vector<rclcpp::Parameter> & parameters)
 {
+  const auto old_model_type = mpt_param_.model_type;
+
   mpt_param_.onParam(parameters);
+
+  if (old_model_type != mpt_param_.model_type) {
+    state_equation_generator_.updateModel(
+      vehicle_info_.wheel_base_m,
+      mpt_param_.max_steer_rad,
+      mpt_param_.model_type,
+      mpt_param_.k_ref,
+      mpt_param_.delta_f_ref,
+      mpt_param_.rr_ref);
+  }
+
   updateVehicleCircles();
-  debug_data_ptr_->mpt_visualize_sampling_num = mpt_param_.mpt_visualize_sampling_num;
+  debug_data_ptr_->mpt_visualize_sampling_num =
+    mpt_param_.mpt_visualize_sampling_num;
 }
 std::optional<std::vector<TrajectoryPoint>> MPTOptimizer::optimizeTrajectory(
   const PlannerData & planner_data)
