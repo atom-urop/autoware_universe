@@ -645,7 +645,7 @@ std::vector<TrajectoryPoint> PathOptimizer::extendTrajectory(
     traj_points, joint_start_pose.position, joint_start_traj_seg_idx,
     joint_traj_max_length_for_smoothing, joint_traj_min_length_for_smoothing);
   if (!joint_end_traj_point_idx) {
-    return trajectory_utils::resampleTrajectoryPoints(
+    return trajectory_utils::resampleTrajectoryPointsPreserveYaw(
       optimized_traj_points, traj_param_.output_delta_arc_length);
   }
 
@@ -666,8 +666,9 @@ std::vector<TrajectoryPoint> PathOptimizer::extendTrajectory(
   }();
 
   // resample trajectory points
-  auto resampled_traj_points = trajectory_utils::resampleTrajectoryPoints(
-    full_traj_points, traj_param_.output_delta_arc_length);
+  auto resampled_traj_points =
+    trajectory_utils::resampleTrajectoryPointsPreserveYaw(
+      full_traj_points, traj_param_.output_delta_arc_length);
 
   // update stop velocity on joint
   for (size_t i = joint_start_traj_seg_idx + 1; i <= *joint_end_traj_point_idx; ++i) {
