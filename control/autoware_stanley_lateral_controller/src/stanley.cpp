@@ -133,8 +133,20 @@ ResultWithReason Stanley::getData(
     predicted_front_odometry,
     predicted_nearest_pose);
 
-  data.current_lateral_error = current_lateral_error;
-  data.lateral_error = predicted_lateral_error;
+  const double current_yaw =
+    tf2::getYaw(current_front_odometry.pose.pose.orientation);
+
+  const double reference_yaw =
+    tf2::getYaw(current_nearest_pose.orientation);
+
+  const double yaw_error =
+    std::atan2(
+      std::sin(reference_yaw - current_yaw),
+      std::cos(reference_yaw - current_yaw));
+
+    data.current_lateral_error = current_lateral_error;
+    data.lateral_error = predicted_lateral_error;
+    data.yaw_error = yaw_error;
 
   // Calculate the curvature vector for the entire reference trajectory.
   const auto curvature_vector = calcCurvatureVectorStanley(
@@ -200,15 +212,19 @@ ResultWithReason Stanley::calculateControl(
   const double cross_track_term = std::atan2(
     m_k_gain1 * stanley_data.lateral_error,
     stanley_data.longitudinal_velocity + m_k_soft);
-  
+
+  const double stanley_term =
+    stanley_data.yaw_error + cross_track_term;
+
   stanley_debug_data.cross_track_term = cross_track_term;
+  stanley_debug_data.yaw_error = stanley_data.yaw_error;
 
   // ============================================================
   // 3. Equivalent 2WS front steering
   // ============================================================
 
   double front_steer =
-    m_k_gain2 * cross_track_term;
+    m_k_gain2 * stanley_term;
 
   // ============================================================
   // 4. Saturate equivalent 2WS steering

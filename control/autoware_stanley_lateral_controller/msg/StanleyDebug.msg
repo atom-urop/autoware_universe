@@ -1,4 +1,5 @@
 float64 lateral_error
+float64 yaw_error
 float64 reference_curvature
 float64 longitudinal_velocity
 float64 cross_track_term

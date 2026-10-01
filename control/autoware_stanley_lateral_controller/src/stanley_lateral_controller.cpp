@@ -283,6 +283,7 @@ m_rear_steering_publisher->publish(rear_steering_cmd);
 autoware_stanley_lateral_controller::msg::StanleyDebug debug_msg;
 
 debug_msg.lateral_error = stanley_debug_data.lateral_error;
+debug_msg.yaw_error = stanley_debug_data.yaw_error;
 debug_msg.reference_curvature = stanley_debug_data.reference_curvature;
 debug_msg.longitudinal_velocity = stanley_debug_data.longitudinal_velocity;
 debug_msg.cross_track_term = stanley_debug_data.cross_track_term;

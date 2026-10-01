@@ -39,6 +39,7 @@ struct ResultWithReason
 struct StanleyData
 {
   double lateral_error;
+  double yaw_error;
   double current_lateral_error;
   double reference_curvature;
   double longitudinal_velocity;
@@ -47,6 +48,7 @@ struct StanleyData
 struct StanleyDebugData
 {
   double lateral_error;
+  double yaw_error;
   double reference_curvature;
   double longitudinal_velocity;
 
