@@ -64,6 +64,7 @@ void Stanley::updateParameters(
 
 ResultWithReason Stanley::calculateStanley(
   const Trajectory & reference_trajectory,
+  const Odometry & current_rear_odometry,
   const Odometry & current_front_odometry,
   const Odometry & predicted_front_odometry,
   Lateral & ctrl_cmd,
@@ -74,6 +75,7 @@ ResultWithReason Stanley::calculateStanley(
 
   const auto data_result = getData(
     reference_trajectory,
+    current_rear_odometry,
     current_front_odometry,
     predicted_front_odometry,
     stanley_data);
@@ -103,10 +105,20 @@ ResultWithReason Stanley::calculateStanley(
 
 ResultWithReason Stanley::getData(
   const Trajectory & reference_trajectory,
+  const Odometry & current_rear_odometry,
   const Odometry & current_front_odometry,
   const Odometry & predicted_front_odometry,
   StanleyData & data)
 {
+    size_t current_rear_nearest_idx;
+
+    const auto current_rear_nearest_pose = calcNearestPoseInterpStanley(
+      reference_trajectory,
+      current_rear_odometry.pose.pose,
+      ego_nearest_dist_threshold,
+      ego_nearest_yaw_threshold,
+      current_rear_nearest_idx);
+
   size_t current_nearest_idx;
 
   const auto current_nearest_pose = calcNearestPoseInterpStanley(
@@ -157,13 +169,13 @@ ResultWithReason Stanley::getData(
   const double predicted_reference_curvature =
     curvature_vector.at(predicted_nearest_idx);
 
-  const double current_reference_curvature =
-    curvature_vector.at(current_nearest_idx);
+  const double current_rear_reference_curvature =
+    curvature_vector.at(current_rear_nearest_idx);
 
   const double reference_curvature =
-  std::abs(predicted_reference_curvature) >= std::abs(current_reference_curvature)
+  std::abs(predicted_reference_curvature) >= std::abs(current_rear_reference_curvature)
     ? predicted_reference_curvature
-    : current_reference_curvature;
+    : current_rear_reference_curvature;
 
   const double curvature_max =
     std::sin(2.0 * m_max_steer_angle) /
@@ -178,6 +190,7 @@ ResultWithReason Stanley::getData(
     predicted_front_odometry.twist.twist.linear.x;
 
   (void)current_nearest_pose;
+  (void)current_rear_nearest_pose;
 
   return ResultWithReason{true};
 }

@@ -98,6 +98,7 @@ public:
 
   ResultWithReason calculateStanley(
     const Trajectory & reference_trajectory,
+    const Odometry & current_rear_odometry,
     const Odometry & current_front_odometry,
     const Odometry & predicted_front_odometry,
     Lateral & ctrl_cmd,
@@ -106,6 +107,7 @@ public:
 
   ResultWithReason getData(
     const Trajectory & reference_trajectory,
+    const Odometry & current_rear_odometry,
     const Odometry & current_front_odometry,
     const Odometry & predicted_front_odometry,
     StanleyData & data);

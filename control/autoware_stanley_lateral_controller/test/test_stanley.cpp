@@ -123,6 +123,12 @@ TEST(StanleyTest, GetDataPredictedLateralError)
   current_front_odometry.pose.pose.position.y = -1.0;
   current_front_odometry.pose.pose.orientation.w = 1.0;
 
+  // Current rear axle.
+  nav_msgs::msg::Odometry current_rear_odometry;
+  current_rear_odometry.pose.pose.position.x = 0.0;
+  current_rear_odometry.pose.pose.position.y = -1.0;
+  current_rear_odometry.pose.pose.orientation.w = 1.0;
+
   // Predicted front axle.
   // It is 1 m to the right of the reference trajectory.
   nav_msgs::msg::Odometry predicted_front_odometry;
@@ -135,6 +141,7 @@ TEST(StanleyTest, GetDataPredictedLateralError)
   const auto result = stanley.getData(
     trajectory,
     current_front_odometry,
+    current_rear_odometry,
     predicted_front_odometry,
     data);
 
@@ -197,6 +204,12 @@ TEST(StanleyTest, GetDataStraightTrajectory)
   current_front_odometry.pose.pose.orientation.z = 0.0;
   current_front_odometry.pose.pose.orientation.w = 1.0;
 
+  // Current rear axle.
+  nav_msgs::msg::Odometry current_rear_odometry;
+  current_rear_odometry.pose.pose.position.x = 3.0;
+  current_rear_odometry.pose.pose.position.y = -1.0;
+  current_rear_odometry.pose.pose.orientation.w = 1.0;
+
   // ------------------------------------------------------------
   // Predicted front axle odometry
   // ------------------------------------------------------------
@@ -219,6 +232,7 @@ TEST(StanleyTest, GetDataStraightTrajectory)
 
   const auto result = stanley.getData(
     trajectory,
+    current_rear_odometry,
     current_front_odometry,
     predicted_front_odometry,
     data);
@@ -348,9 +362,12 @@ TEST(StanleyTest, GetDataSelectsLargestAbsoluteCurvature)
   const size_t current_idx = 40;
 
   nav_msgs::msg::Odometry current_front_odometry;
+  nav_msgs::msg::Odometry current_rear_odometry;
 
   current_front_odometry.pose.pose =
     trajectory.points.at(current_idx).pose;
+  
+  current_rear_odometry = current_front_odometry;
 
   // ------------------------------------------------------------
   // Predicted odometry: inside second arc
@@ -372,6 +389,7 @@ TEST(StanleyTest, GetDataSelectsLargestAbsoluteCurvature)
 
   const auto result = stanley.getData(
     trajectory,
+    current_rear_odometry,
     current_front_odometry,
     predicted_front_odometry,
     data);
@@ -557,9 +575,12 @@ TEST(StanleyTest, GetDataSelectsCurrentCurvatureWhenLarger)
   const size_t current_idx = 120;
 
   nav_msgs::msg::Odometry current_front_odometry;
+  nav_msgs::msg::Odometry current_rear_odometry;
 
   current_front_odometry.pose.pose =
     trajectory.points.at(current_idx).pose;
+  
+  current_rear_odometry = current_front_odometry;
 
   // ------------------------------------------------------------
   // Predicted -> first arc, kappa ~= 0.1
@@ -580,6 +601,7 @@ TEST(StanleyTest, GetDataSelectsCurrentCurvatureWhenLarger)
 
   const auto result = stanley.getData(
     trajectory,
+    current_rear_odometry,
     current_front_odometry,
     predicted_front_odometry,
     data);
@@ -703,9 +725,12 @@ TEST(StanleyTest, GetDataSaturatesCurvature)
   const size_t predicted_idx = 70;
 
   nav_msgs::msg::Odometry current_front_odometry;
+  nav_msgs::msg::Odometry current_rear_odometry;
 
   current_front_odometry.pose.pose =
     trajectory.points.at(current_idx).pose;
+
+  current_rear_odometry = current_front_odometry;
 
   nav_msgs::msg::Odometry predicted_front_odometry;
 
@@ -721,6 +746,7 @@ TEST(StanleyTest, GetDataSaturatesCurvature)
   const auto result = stanley.getData(
     trajectory,
     current_front_odometry,
+    current_rear_odometry,
     predicted_front_odometry,
     data);
 
@@ -835,9 +861,12 @@ TEST(StanleyTest, GetDataPreservesCurvatureSignWhenSaturated)
   const size_t test_idx = 30;
 
   nav_msgs::msg::Odometry current_front_odometry;
+  nav_msgs::msg::Odometry current_rear_odometry;
 
   current_front_odometry.pose.pose =
     trajectory.points.at(test_idx).pose;
+
+  current_rear_odometry = current_front_odometry;
 
   nav_msgs::msg::Odometry predicted_front_odometry;
 
@@ -852,6 +881,7 @@ TEST(StanleyTest, GetDataPreservesCurvatureSignWhenSaturated)
 
   const auto result = stanley.getData(
     trajectory,
+    current_rear_odometry,
     current_front_odometry,
     predicted_front_odometry,
     data);
@@ -1530,6 +1560,11 @@ TEST(StanleyTest, CalculateStanley)
 
   Odometry predicted_odometry = current_odometry;
 
+  Odometry current_rear_odometry;
+  current_rear_odometry.pose.pose.position.x = 3.0;
+  current_rear_odometry.pose.pose.position.y = 0.1;
+  current_rear_odometry.pose.pose.orientation.w = 1.0;
+
   Lateral ctrl_cmd;
   double rear_steer = 0.0;
 
@@ -1538,6 +1573,7 @@ TEST(StanleyTest, CalculateStanley)
   const auto result =
     stanley.calculateStanley(
       trajectory,
+      current_rear_odometry,
       current_odometry,
       predicted_odometry,
       ctrl_cmd,

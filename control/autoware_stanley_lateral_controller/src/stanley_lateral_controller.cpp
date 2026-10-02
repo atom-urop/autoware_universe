@@ -257,6 +257,7 @@ StanleyDebugData stanley_debug_data;
 
 const auto stanley_result = m_stanley->calculateStanley(
   front_trajectory,
+  m_current_kinematic_state,
   current_front_odometry,
   predicted_front_odometry,
   output.control_cmd,
